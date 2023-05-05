@@ -23,6 +23,4 @@ cellranger count --id tfseq_trimmed --fastqs=./ --sample=tfseq_trimmed --transcr
 ### 1.2. Assign each cell to a TF
 For this we implemented a Java tool, called [TF-seq Tools](https://github.com/DeplanckeLab/TFseqTools/). Please check the dedicated GitHub page for this step.
 
-### 1.1. Download software
-TF-seq preprocessing tool is provided as a [single executable jar file](../master/releases/TFseqTools-1.0.jar?raw=true).
-The .jar file contains all required materials and can be run on any terminal.
+### 1.3.
