@@ -5,7 +5,7 @@ Material and source code for TF-seq manuscript
 All .fastq files were deposited on ArrayExpress under the accession number [E-MTAB-XXXX](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-XXXX)
 
 ## 1. Preprocessing of TF-seq libraries
-TF-seq generates a library containing both the single-cell RNA-seq data and the TF barcodes. While it is possible to use this library only, we recommend making a second library, enriching the TF barcodes, to better assign cells to their corresponding TF barcodes (see the **Methods** section in the manuscript.
+TF-seq generates a library containing both the single-cell RNA-seq data and the TF barcodes. While it is possible to use this library only, we recommend making a second library, enriching the TF barcodes, to better assign cells to their corresponding TF barcodes (see the **Methods** section in the manuscript).
 
 Therefore, a typical run output two libraries:
 - A standard 10x library, to be analyzed with cellranger
@@ -36,4 +36,9 @@ java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam
 ```
 **Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The TF_barcodes.txt file is accessible from ArrayExpress.
 
-### 1.3.
+### 1.3. Filtering the TF matrix
+**TODO:** This is the code of Pernille?
+
+## 2. Manuscript Figures
+### Figure 1 A
+bla
