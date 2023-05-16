@@ -32,9 +32,9 @@ For this step, we implemented a Java tool called [TF-seq Tools](https://github.c
 STAR --runMode alignReads --genomeDir ${vector_genome} --outFilterMultimapNmax 1 --readFilesCommand zcat --outSAMtype BAM Unsorted --readFilesIn TFEnrich_R2.fastq.gz
 mv Aligned.out.bam TFEnrich_R2.bam
 # Count the TF-barcodes
-java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam -tf TF_barcodes.txt -p BU -UMI 12 -BC 16
+java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam -tf C3H10_10X_Metadata.txt -p BU -UMI 12 -BC 16
 ```
-**Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The TF_barcodes.txt file is accessible from ArrayExpress.
+**Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt).
 
 ### 1.3. Filtering the TF matrix
 **TODO:** This is the code of Pernille?
