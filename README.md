@@ -34,6 +34,6 @@ mv Aligned.out.bam TFEnrich_R2.bam
 # Count the TF-barcodes
 java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam -tf TF_barcodes.txt -p BU -UMI 12 -BC 16
 ```
-**Note:** We provide the vector genome (.fasta file) [here](main/vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The TF_barcodes.txt file is accessible from ArrayExpress.
+**Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The TF_barcodes.txt file is accessible from ArrayExpress.
 
 ### 1.3.
