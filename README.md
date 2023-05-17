@@ -1,5 +1,5 @@
 # TF-seq
-Material and source code for TF-seq manuscript
+Material and source code for the TF-seq manuscript
 
 ## 0. Raw sequencing data
 All .fastq files were deposited on ArrayExpress under the accession number [E-MTAB-13010](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-13010). It comprises nine 10x libraries (exp5-13), each of them containing different overexpressed TFs. Information about which TF is associated to which library can be found in the [C3H10_10X_Metadata.txt](metadata/C3H10_10X_Metadata.txt) metadata file.
