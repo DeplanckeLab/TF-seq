@@ -2,7 +2,7 @@
 Material and source code for TF-seq manuscript
 
 ## 0. Raw sequencing data
-All .fastq files were deposited on ArrayExpress under the accession number [E-MTAB-XXXX](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-XXXX)
+All .fastq files were deposited on ArrayExpress under the accession number [E-MTAB-13010](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-13010)
 
 ## 1. Preprocessing of TF-seq libraries
 TF-seq generates a library containing both the single-cell RNA-seq data and the TF barcodes. While it is possible to use this library only, we recommend making a second library, enriching the TF barcodes, to better assign cells to their corresponding TF barcodes (see the **Methods** section in the manuscript).
