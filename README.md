@@ -34,7 +34,7 @@ mv Aligned.out.bam TFEnrich_R2.bam
 # Count the TF-barcodes
 java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam -tf C3H10_10X_Metadata.txt -p BU -UMI 12 -BC 16
 ```
-**Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt).
+**Note:** We provide the vector genome (.fasta file) [here](vector_genome_assembly/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt). Note that for the manuscript, we did not use the whole C3H10_10X_Metadata.txt matrix, but subsetted it for each 10x library (exp5 to exp13).
 
 ### 1.3. Filtering the TF matrix
 **TODO:** This is the code of Pernille?
