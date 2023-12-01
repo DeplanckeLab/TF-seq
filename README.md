@@ -37,7 +37,7 @@ java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam
 ```
 **Note:** We provide the vector genome (.fasta file) [here](vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt). Note that for the manuscript, we did not use the whole C3H10_10X_Metadata.txt matrix, but subsetted it for each 10x library (exp5 to exp13).
 
-### 1.3. Filtering the TF matrix
+### 1.3. Robustly assigning TF to their respective cells
 At this point, we get 
 - a scRNA-seq count matrix from cellranger (**1.1**) with automated filtered cells based on cellranger cutoffs for detecting empty cells
 - a TF-Cell mapping matrix from TF-seq Tools (**1.2**) which detected TF barcodes and their corresponding cell barcodes (we used the read count matrix, not the UMI count matrix).
@@ -69,8 +69,72 @@ cutoff <- SamSPECTRAL::kneepointDetection(TFsBC.MaxRate.cutoff_order)
 # Cell barcodes passing filtering
 cell_barcodes_filtered <- names(TFsBC.MaxRate.cutoff)[TFsBC.MaxRate.cutoff > TFsBC.MaxRate.cutoff_order[cutoff$MinIndex]]
 ```
-Finally, we used these filtered cells with robustly assigned TF-id for the rest of the analyses pipelines.
+After filtering out these cells with potentially ambiguous TF attribution, we robustly assigned each TF to their cells by selecting the most abundant TF.
+
+### 1.4. Filtering outlier cells
+
+At step 1.3 we create a Seurat object containing the raw data counts and a cell metadata containing their assigned TFs. At this stage, following the previous pipeline, all cells have an assigned TF.<br/>
+Now, following the standard Seurat pipeline, we aimed at removing outlier cells given the following criteria:
+- Remove outlier cells using the `isOutlier` function of the `scater` package for library depth (nCounts) and number of detected genes (nFeature)
+- Remove cells with too much mitochondrial RNA or ribosomal RNA
+- Remove cells with not enough protein-coding RNA
+
+Here is the function that is performing this filtering:
+
+```R
+filtering_outlierCells <- function(seurat_path, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75){
+  data.seurat <- readRDS(seurat_path) # Read Seurat object generated at step 1.3
+
+  ### ---Features and Library size
+  # Looking for outlier cells in the nCount_RNA distribution (returns TRUE/FALSE array)
+  libsize.drop <- scater::isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type="lower", log=TRUE) # nCount_RNA / colSums(data.seurat)
+  # Looking for outlier cells in the nFeature_RNA distribution (returns TRUE/FALSE array)
+  features.drop <- scater::isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA / as.vector(colSums(data.seurat > 0))
+  
+  ### --- Mitochondrial
+  mito.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.96_mito.annot.txt")
+  mito.genes <- mito.genes$ens_id[mito.genes$ens_id %in% rownames(data.seurat)]
+  # Calculating the ratio of mitochondrial reads for each cell
+  data.seurat$percent.mito <- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  ### --- Ribosomal
+  ribo.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.91_rRNA.annot.txt")
+  ribo.genes <- ribo.genes$ens_id[ribo.genes$ens_id %in% rownames(data.seurat)]
+  # Calculating the ratio of ribosomal reads for each cell
+  data.seurat$percent.rRNA <- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  ### --- Protein Coding
+  protCod.genes <- read.table("~/SVRAW1/prainer/TF_scRNAseq_04.2019/Metadata/GRCm38.96_Vector_data.annot.txt", sep = "\t")
+  protCod.genes <- subset(protCod.genes, biotype == "protein_coding")
+  protCod.genes <- protCod.genes$ens_id[protCod.genes$ens_id %in% rownames(data.seurat)]
+  # Calculating the ratio of protein coding reads for each cell
+  data.seurat$percent.ProtCod <- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  ### Running the filtering
+  data.seurat <- data.seurat[,features.drop < 1 & libsize.drop < 1 & data.seurat$percent.mito < max_pc_mito & data.seurat$percent.rRNA < max_pc_rRNA & data.seurat$percent.ProtCod > min_pc_protCod]
+  saveRDS(data.seurat, file = "...") # Saving the filtered Seurat object
+}
+```
+
+We did not use the same filtering thresholds for all experiments (exp05-12), because of different qualities and biological contexts across experiments. Here is a summary of our filterings:
+```R
+filtering_outlierCells("exp05", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40,  min_pc_protCod = 75)
+filtering_outlierCells("exp06", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40,  min_pc_protCod = 75)
+filtering_outlierCells("exp07", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40,  min_pc_protCod = 75)
+filtering_outlierCells("exp08", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75)
+filtering_outlierCells("exp09", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35,  min_pc_protCod = 75)
+filtering_outlierCells("exp10", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75)
+filtering_outlierCells("exp11", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75)
+```
+
+### 1.5. Calculating functional cells
+
+TODO
+
+### 1.6. Final dataset
+
+For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to D0 cells (non differentiated MSCs) and MatureAdipo cells (based on adiposcore).
 
 ## 2. Manuscript Figures
 ### Figure 1 A
-bla
+TODO
