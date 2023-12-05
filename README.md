@@ -25,7 +25,7 @@ cellranger count --id tfseq_trimmed --fastqs=./ --sample=tfseq_trimmed --transcr
 ```
 **Note:** In the manuscript, we used the GRCm38 genome assembly (mm10) from Ensembl (release [96](https://ftp.ensembl.org/pub/release-96/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.toplevel.fa.gz)) created using `cellranger mkref`. Specifically, we created an assembly by merging the GRCm38.96 mouse genome with the [vector sequence](https://github.com/DeplanckeLab/TF-seq/blob/main/vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa), which was then used to quantify the amount of vector integrated into the cell. This "Vector" abundance was then termed as "Dose" in the manuscript, as a proxy to TF overexpression abundance.
 
-### 1.2. Assign each cell to a TF
+### 1.2. Counting TF barcodes in the enriched library
 For this step, we implemented a Java tool called [TF-seq Tools](https://github.com/DeplanckeLab/TFseqTools/). Please check the dedicated GitHub page for more details. In short, we first align the R2 enriched fastq file on the vector, and then we use TF-seq Tools to count the TF-barcodes, and assign their corresponding cell barcodes.
 
 ```bash
@@ -37,7 +37,7 @@ java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam
 ```
 **Note:** We provide the vector genome (.fasta file) [here](vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt). Note that for the manuscript, we did not use the whole C3H10_10X_Metadata.txt matrix, but subsetted it for each 10x library (exp5 to exp13).
 
-### 1.3. Robustly assigning TF to their respective cells
+### 1.3. Robustly assigning each cell to a TF
 At this point, we get 
 - a scRNA-seq count matrix from cellranger (**1.1**) with automated filtered cells based on cellranger cutoffs for detecting empty cells
 - a TF-Cell mapping matrix from TF-seq Tools (**1.2**) which detected TF barcodes and their corresponding cell barcodes (we used the read count matrix, not the UMI count matrix).
