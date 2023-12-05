@@ -133,7 +133,8 @@ TODO
 
 ### 1.6. Final dataset
 
-For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and D4/D5 adipocyte differentiation cells. Finally, we calculated an "adiposcore" on the D4/D5 adipocye-differentiated cells, to keep only the truly Mature adipocytes, that we named "MatureAdipo". The function used to calculate this adiposcore follows:
+For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and D4/D5 adipocyte differentiation cells.<br/>
+Finally, we calculated an "adiposcore" on the D4/D5 adipocye-differentiated cells, to keep only the truly Mature adipocytes, that we named "MatureAdipo". The function used to calculate this adiposcore follows:
 ```R
 TODO
 ```
