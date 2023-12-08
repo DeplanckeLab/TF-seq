@@ -1,0 +1,15 @@
+TF1	TF2	valid.combination
+Cebpa_1	Pparg_A6	yes
+Cebpa_2	Myog_BC8	yes
+Cebpa_4	Mycn_4	yes
+Mycn_1	Pparg_G6	yes
+Mycn_2	Runx2_5	yes
+Mycn_3	Myog_BC9	yes
+Mycn_4	Cebpa_4	yes
+Myog_BC8	Cebpa_2	yes
+Myog_BC9	Mycn_3	yes
+Pparg_A6	Cebpa_1	yes
+Pparg_A6	Runx2	yes
+Pparg_G6	Mycn_1	yes
+Runx2	Pparg_A6	yes
+Runx2_5	Mycn_2	yes
