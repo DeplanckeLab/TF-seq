@@ -49,7 +49,7 @@ At this point, we get
 So now we take the overlapping cell barcodes between these two matrices, in order to build the final scRNA-seq object (both containing the scRNA-seq counts from 10x, and the TF assignment as a metadata).
 But we quickly realized that we needed an extra filtering step on this final TF-Cell mapping matrix, because even though most of cells were assigned a single TF barcode (as expected), some of them were aggregating reads from multiple TF barcodes (which should not happen). So we decided to clearly filter these latter out.
 
-## 1.3.1 Experiments 5-11
+#### 1.3.1 Experiments 5-11
 For this, we implemented a KneePoint algorithm, to only keep the cells where the main TF was clearly majoritarily present in the cell.
 
 ```R
@@ -77,7 +77,7 @@ cell_barcodes_filtered <- names(TFsBC.MaxRate.cutoff)[TFsBC.MaxRate.cutoff > TFs
 ```
 After filtering out these cells with potentially ambiguous TF attribution, we robustly assigned each TF to their cells by selecting the most abundant TF.
 
-## 1.3.2 Experiments 12-13
+#### 1.3.2 Experiments 12-13
 Experiments 12-13 were a bit special since some cells could contain a combination of two TFs. Therefore the previously defined kneepoint algorithm cannot work.
 In this case, we implemented another algorithm, to robustly identify singlets and combinations.
 
