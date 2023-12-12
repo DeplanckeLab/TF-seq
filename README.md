@@ -25,7 +25,7 @@ cellranger count --id tfseq_trimmed --fastqs=./ --sample=tfseq_trimmed --transcr
 ```
 **Note:** In the manuscript, we used the GRCm38 genome assembly (mm10) from Ensembl (release [96](https://ftp.ensembl.org/pub/release-96/fasta/mus_musculus/dna/Mus_musculus.GRCm38.dna.toplevel.fa.gz)) created using `cellranger mkref`. Specifically, we created an assembly by merging the GRCm38.96 mouse genome with the [vector sequence](https://github.com/DeplanckeLab/TF-seq/blob/main/vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa), which was then used to quantify the amount of vector integrated into the cell. This "Vector" abundance was then termed as "Dose" in the manuscript, as a proxy to TF overexpression abundance.
 
-**Note 2:** Experiments 12 and 13 were actually two sequencing runs of the same library. So we merged them into a unique library using `cellranger aggr`, that we named **exp12-13**
+**Note 2:** Experiments 12 and 13 were actually two sequencing runs of the same library. So, after generating the cellranger outputs independently for exp12 and exp13, we merged them into a unique library using `cellranger aggr`, that we named **exp12-13**
 
 ### 1.2. Counting TF barcodes in the enriched library
 For this step, we implemented a Java tool called [TF-seq Tools](https://github.com/DeplanckeLab/TFseqTools/). Please check the dedicated GitHub page for more details. In short, we first align the R2 enriched fastq file on the vector, and then we use TF-seq Tools to count the TF-barcodes, and assign their corresponding cell barcodes.
@@ -35,9 +35,11 @@ For this step, we implemented a Java tool called [TF-seq Tools](https://github.c
 STAR --runMode alignReads --genomeDir ${vector_genome} --outFilterMultimapNmax 1 --readFilesCommand zcat --outSAMtype BAM Unsorted --readFilesIn TFEnrich_R2.fastq.gz
 mv Aligned.out.bam TFEnrich_R2.bam
 # Count the TF-barcodes
-java -jar TFCounter-0.1.jar Counter -r1 TFEnrich_R1.fastq.gz -r2 TFEnrich_R2.bam -tf C3H10_10X_Metadata.txt -p BU -UMI 12 -BC 16
+java -jar /software/TFseqTools-1.0.jar Counter --r1 TFEnrich_R1.fastq.gz --r2 TFEnrich_R2.bam --tf C3H10_10X_Metadata.txt -p BU --UMI 12 --BC 16
 ```
-**Note:** We provide the vector genome (.fasta file) [here](vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata.txt file is accessible [here](metadata/C3H10_10X_Metadata.txt). Note that for the manuscript, we did not use the whole C3H10_10X_Metadata.txt matrix, but subsetted it for each 10x library (exp5 to exp13).
+**Note:** We provide the vector genome (.fasta file) [here](vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata_expXX.txt files are accessible [here](metadata/).
+
+**Note 2:** Barcode length was kept as 16 for all experiments. However, UMI length was 10 for exp05 and exp06, and 12 for all other experiments.
 
 ### 1.3. Robustly assigning each cell to a TF
 At this point, we get 
