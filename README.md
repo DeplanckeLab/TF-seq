@@ -27,7 +27,7 @@ cellranger count --id tfseq_trimmed --fastqs=./ --sample=tfseq_trimmed --transcr
 
 **Note 2:** Experiments 12 and 13 were actually two sequencing runs of the same library. So, after generating the cellranger outputs independently for exp12 and exp13, we merged them into a unique library using `cellranger aggr`, that we named **exp12-13**
 
-### 1.2. Counting TF barcodes in the enriched library <sub>(see full code [here](code/1.2_Counting_TF_barcodes.sh))</sub>
+### 1.2. Counting TF barcodes in the enriched library <sub>(see full code here: [[sh](code/1.2_Counting_TF_barcodes.sh)])</sub>
 For this step, we implemented a Java tool called [TF-seq Tools](https://github.com/DeplanckeLab/TFseqTools/). Please check the dedicated GitHub page for more details. In short, we first align the R2 enriched fastq file on the vector, and then we use TF-seq Tools to count the TF-barcodes, and assign their corresponding cell barcodes.
 
 ```bash
@@ -41,7 +41,7 @@ java -jar /software/TFseqTools-1.0.jar Counter --r1 TFEnrich_R1.fastq.gz --r2 TF
 
 **Note 2:** Barcode length was kept as 16 for all experiments. However, UMI length was 10 for exp05 and exp06, and 12 for all other experiments.
 
-### 1.3. Robustly assigning each cell to a TF <sub>(see full code here: [[Rmd](code/1.3_Assigning_TF.Rmd)][[html](code/1.3_Assigning_TF.html)])</sub>
+### 1.3. Robustly assigning each cell to a TF <sub>(see full code here: [[Rmd](code/1.3_Assigning_TF.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.3_Assigning_TF.html)])</sub>
 At this point, we get 
 - a scRNA-seq count matrix from cellranger (**1.1**) with automated filtered cells based on cellranger cutoffs for detecting empty cells
 - a TF-Cell mapping matrix from TF-seq Tools (**1.2**) which detected TF barcodes and their corresponding cell barcodes (we used the read count matrix, not the UMI count matrix).
