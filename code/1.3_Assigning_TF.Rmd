@@ -293,7 +293,7 @@ rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
 filtering_kneepoint_combination(
   exp_cellranger = "./cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5",
   exp_tf_cell = "./results/C3H10_10X_exp12-13_enriched.read_matrix.txt",
-  exp_combination_list = "./C3H10_10X_Metadata_exp12-13_combination.txt",
+  exp_combination_list = "./metadata/C3H10_10X_Metadata_exp12-13_combination.txt",
   exp_out_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
 ```
 
