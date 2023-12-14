@@ -28,6 +28,8 @@ cellranger count --id tfseq_trimmed --fastqs=./ --sample=tfseq_trimmed --transcr
 **Note 2:** Experiments 12 and 13 were actually two sequencing runs of the same library. So, after generating the cellranger outputs independently for exp12 and exp13, we merged them into a unique library using `cellranger aggr`, that we named **exp12-13**
 
 ### 1.2. Counting TF barcodes in the enriched library
+<sub>(see full code [here](code/1.2_Counting_TF_barcodes.sh)</sub>
+
 For this step, we implemented a Java tool called [TF-seq Tools](https://github.com/DeplanckeLab/TFseqTools/). Please check the dedicated GitHub page for more details. In short, we first align the R2 enriched fastq file on the vector, and then we use TF-seq Tools to count the TF-barcodes, and assign their corresponding cell barcodes.
 
 ```bash
