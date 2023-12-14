@@ -158,7 +158,7 @@ data.tf_read.top2$TF <- meta_combinations[paste0(data.tf_read.top2$TFmax,"-",dat
 data.tf_read.top2$TF[is.na(data.tf_read.top2$TF)] <- data.tf_read.top2$TFmax[is.na(data.tf_read.top2$TF)]
 ```
 
-### 1.4. Filtering outlier cells
+### 1.4. Filtering outlier cells <sub>(see full code here: [[Rmd](code/1.4_Filtering_outlier_cells.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.4_Filtering_outlier_cells.html)])</sub>
 At step 1.3 we create a Seurat object containing the raw data counts and a cell metadata containing their assigned TFs. At this stage, following the previous pipeline, all cells have an assigned TF.<br/>
 Now, following the standard Seurat pipeline, we aimed at removing outlier cells given the following criteria:
 - Remove outlier cells using the `isOutlier` function of the `scater` package for library depth (nCounts) and number of detected genes (nFeature)
