@@ -1,0 +1,299 @@
+---
+title: "1.3 Assigning TF to cell barcodes for scTF-seq data"
+author: "Vincent Gardeux"
+date: "2023/11/23"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
+suppressPackageStartupMessages(library(SamSPECTRAL)) # For the kneepoint algorithm
+suppressPackageStartupMessages(library(Rfast)) # For colnth function
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+cat(bold("SamSPECTRAL"), "version", as.character(packageVersion("SamSPECTRAL")), "\n")
+cat(bold("Rfast"), "version", as.character(packageVersion("Rfast")), "\n")
+
+## Kneepoint filtering and TF assignment
+filtering_kneepoint <- function(exp_cellranger, exp_tf_cell, exp_out_seurat){
+  ## Cell Ranger
+  data.cell_ranger <- Read10X_h5(filename = exp_cellranger, use.names = F)
+  
+  ## Cell Ranger barcodes
+  data.barcodes <- unlist(data.cell_ranger@Dimnames[2])
+  data.barcodes <- gsub(pattern = "-1", replacement = "", x = data.barcodes)
+  data.cell_ranger@Dimnames[2] <- list(data.barcodes)
+  message(length(data.barcodes), " cell barcodes in cell ranger.")
+  
+  ## Create Seurat object
+  data.seurat <- CreateSeuratObject(data.cell_ranger)
+  rm(data.cell_ranger)
+  
+  # 10x
+  data.tf_read <- fread(exp_tf_cell, data.table = F)
+  rownames(data.tf_read) <- data.tf_read$TFName
+  data.barcodes_tf <- colnames(data.tf_read)[3:ncol(data.tf_read)]
+  message(length(data.barcodes_tf), " cell barcodes in TF/Cell")
+  
+  # Overlap
+  common.barcodes <- intersect(data.barcodes_tf, data.barcodes)
+  data.tf_read <- data.tf_read[,common.barcodes] # Filtered TF Matrix
+  message(length(common.barcodes), " cell barcodes are overlapping.")
+
+  # Calculate rate of main TF
+  nCounts <- colSums(data.tf_read)
+  nMax <- apply(data.tf_read, 2, max) 
+  TFs.MaxRate <- nMax / nCounts
+  TFsBC.MaxRate.cutoff <- TFs.MaxRate[nCounts > 5] # Select cells with at least 5 reads
+  
+  # Knee point cutoff detection
+  TFsBC.MaxRate.cutoff_order <- TFsBC.MaxRate.cutoff[order(TFsBC.MaxRate.cutoff, decreasing = T)] # order from 1 to 0 
+  cutoff <- kneepointDetection(TFsBC.MaxRate.cutoff_order)
+
+  # Count how many cells are passing the filtering
+  filtered_barcodes <- common.barcodes[TFs.MaxRate > TFsBC.MaxRate.cutoff_order[cutoff$MinIndex] & nCounts > 5]
+  message(length(filtered_barcodes), " cells are passing the kneepoint filtering")
+  
+  # Subset cell_ranger matrix
+  data.seurat <- data.seurat[,filtered_barcodes]
+  data.tf_read <- data.tf_read[,filtered_barcodes]
+  
+  # Assign TFs
+  TF <- c()
+  nMax <- apply(data.tf_read, 2, max)
+  for(i in 1:ncol(data.tf_read)){
+    TF <- c(TF, rownames(data.tf_read)[data.tf_read[,i] == max(data.tf_read[,i])])
+  }
+  
+  # Add to Seurat Object
+  data.seurat$TF <- TF
+
+  saveRDS(data.seurat, file = exp_out_seurat)
+}
+
+## Kneepoint filtering and TF assignment, specific for exp12-13, which contains combinations of 2 TFs
+filtering_kneepoint_combination <- function(exp_cellranger, exp_tf_cell, exp_combination_list, exp_out_seurat){
+  ## Cell Ranger
+  data.cell_ranger <- Read10X_h5(filename = exp_cellranger, use.names = F)
+
+  ## Cell Ranger barcodes
+  data.barcodes <- unlist(data.cell_ranger@Dimnames[2])
+  message(length(data.barcodes), " cell barcodes in cell ranger.")
+
+  ## Create Seurat object
+  data.seurat <- CreateSeuratObject(data.cell_ranger)
+  rm(data.cell_ranger)
+
+  # 10x
+  data.tf_read <- fread(exp_tf_cell, data.table = F, )
+  rownames(data.tf_read) <- data.tf_read$TFName
+  data.barcodes_tf <- colnames(data.tf_read)[3:ncol(data.tf_read)]
+  message(length(data.barcodes_tf), " cell barcodes in TF/Cell")
+  
+  # Overlap
+  common.barcodes <- intersect(data.barcodes_tf, data.barcodes)
+  data.tf_read <- data.tf_read[,common.barcodes] # Filtered TF Matrix
+  message(length(common.barcodes), " cell barcodes are overlapping.")
+  
+  # Get combinations
+  meta_combinations <- fread(exp_combination_list, data.table = F)
+  rownames(meta_combinations) <- paste0(meta_combinations$TF1,"-",meta_combinations$TF2)
+  
+  # Precompute total TF read counts per cell barcode
+  nCounts <- colSums(data.tf_read)
+  
+  # Calculate rate of main and second TF using Rfast package
+  all.top2 <- colnth(as.matrix(data.tf_read), rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 2)
+  first.indexes <- colnth(as.matrix(data.tf_read), index.return = T, rep(1,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+  second.indexes <- colnth(as.matrix(data.tf_read), index.return = T, rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+  
+  # Prepare output dataframe with rate of main and second TF
+  data.tf_read.top2 <- data.frame(matrix(nrow = ncol(data.tf_read), ncol = 6), row.names = colnames(data.tf_read))
+  colnames(data.tf_read.top2) <- c("TFmax", "TFmax.rate", "nMax", "TF2nd", "TF2nd.rate", "n2nd")
+  
+  # Fill it
+  data.tf_read.top2$nMax <- all.top2[1,]
+  data.tf_read.top2$TFmax.rate <- data.tf_read.top2$nMax / nCounts
+  data.tf_read.top2$n2nd <- all.top2[2,]
+  data.tf_read.top2$TF2nd.rate <- data.tf_read.top2$n2nd / nCounts
+  data.tf_read.top2$TFmax <- rownames(data.tf_read)[first.indexes]
+  data.tf_read.top2$TF2nd <- rownames(data.tf_read)[second.indexes]
+  
+  # Generate pseudo-TF as sum of top 2 TFs
+  data.tf_read.top2$nPseudoTF <- data.tf_read.top2$nMax + data.tf_read.top2$n2nd
+  data.tf_read.top2$PseudoTF.rate <- (data.tf_read.top2$nMax + data.tf_read.top2$n2nd) / nCounts
+  
+  # Remove top barcodes if n = 0
+  data.tf_read.top2$TFmax[data.tf_read.top2$nMax == 0] <- NA
+  data.tf_read.top2$TF2nd[data.tf_read.top2$n2nd == 0] <- NA
+  
+  # Which pair of TF could be a combination, based on metadata
+  data.tf_read.top2$potential.combination <- paste0(data.tf_read.top2$TFmax,"-",data.tf_read.top2$TF2nd) %in% rownames(meta_combinations)
+  
+  # Filter cells with too low number of counts
+  data.tf_read.top2 <- data.tf_read.top2[names(nCounts[nCounts > 5]),,drop=F]
+  
+  # Find the cutoff of the "Pseudo TF" thanks to kneepoint detection 
+  PseudoTF.rate_order <- data.tf_read.top2[order(data.tf_read.top2$PseudoTF.rate, decreasing = T), "PseudoTF.rate", drop=F]
+  cutoff <- kneepointDetection(PseudoTF.rate_order$PseudoTF.rate)
+  
+  # Filter cells based on cutoff kneepoint pseudo TF
+  data.tf_read.top2 <- subset(data.tf_read.top2, PseudoTF.rate >= PseudoTF.rate_order[cutoff$MinIndex, "PseudoTF.rate"])
+  
+  # Now, find the cutoff of the "Main TF", thanks to kneepoint detection to identify singlets versus combinations (real and doublets)
+  TFmax.rate_order <- data.tf_read.top2[order(data.tf_read.top2$TFmax.rate, decreasing = T), "TFmax.rate", drop=F]
+  cutoff <- kneepointDetection(TFmax.rate_order$TFmax.rate)
+  
+  # Select cells based on cutoff kneepoint TF max rate of selected cells 
+  data.tf_read.top2$singles <- data.tf_read.top2$TFmax.rate >= TFmax.rate_order[cutoff$MinIndex,"TFmax.rate"]
+  
+  # Remove Doublets (keep only combination and single TFs)
+  data.tf_read.top2 <- subset(data.tf_read.top2, potential.combination == TRUE | singles == TRUE)
+  
+  # Assign TFs and combinations
+  data.tf_read.top2$TF2nd[data.tf_read.top2$singles] <- NA
+  data.tf_read.top2$TF <- meta_combinations[paste0(data.tf_read.top2$TFmax,"-",data.tf_read.top2$TF2nd), "combination"]
+  data.tf_read.top2$TF[is.na(data.tf_read.top2$TF)] <- data.tf_read.top2$TFmax[is.na(data.tf_read.top2$TF)]
+  
+  # Subset cell_ranger matrix
+  data.seurat <- data.seurat[,rownames(data.tf_read.top2)]
+  
+  # Assign TFs to Seurat Object
+  data.seurat$TF <- data.tf_read.top2$TF
+  sum(table(data.seurat$TF))
+  
+  message(ncol(data.seurat), " cells are passing the kneepoint filtering")
+  
+  saveRDS(data.seurat, file = exp_out_seurat)
+}
+
+```
+
+## Kneepoint filtering
+
+# Exp05 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp05_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp05_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp06 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp06_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp06_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp07 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp07_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp07_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp08 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp08_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp08_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp09 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp09_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp09_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp10 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp10_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp10_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp11 - Enriched
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "./cellranger/C3H10_10X_exp11_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp11_enriched.read_matrix.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds"
+)
+```
+
+# Exp12-13
+
+There, it is special, since this study was sequenced twice (thus we need to merge the .h5 files). Moreover, the study contains combination TF (pairs of TFs), so we cannot run the kneepoint algorithm as is on these cells.
+
+# First, let's create the merged matrix: C3H10_10X_exp12-13_enriched.read_matrix.txt
+
+```{r}
+# Reading exp12
+TF_EXP12 <- fread("./results/C3H10_10X_exp12_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+# Adding back the '-1', since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP12)[3:ncol(TF_EXP12)] <- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], "-1")
+message(ncol(TF_EXP12) - 2, " cells in exp12 TF matrix")
+
+# Reading exp13
+TF_EXP13 <- fread("./results/C3H10_10X_exp13_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+# Adding back the '-2', since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP13)[3:ncol(TF_EXP13)] <- paste0(colnames(TF_EXP13)[3:ncol(TF_EXP13)], "-2")
+message(ncol(TF_EXP13) - 2, " cells in exp13 TF matrix")
+
+# Merging
+#all(TF_EXP12$TFName == TF_EXP13$TFName) # TRUE
+#all(TF_EXP12$TFId == TF_EXP13$TFId) # TRUE
+TF_EXP12_13 <- cbind(TF_EXP12, TF_EXP13[3:ncol(TF_EXP13)])
+
+# Writing
+fwrite(TF_EXP12_13, file = "./results/C3H10_10X_exp12-13_enriched.read_matrix.txt", sep = "\t", quote = F, row.names = F, col.names = T)
+
+message(ncol(TF_EXP12_13) - 2, " cells in merged TF matrix")
+rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
+```
+
+## Kneepoint algo for exp12-13 - enriched
+
+```{r}
+filtering_kneepoint_combination(
+  exp_cellranger = "./cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "./results/C3H10_10X_exp12-13_enriched.read_matrix.txt",
+  exp_combination_list = "./C3H10_10X_Metadata_exp12-13_combination.txt",
+  exp_out_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
+```
+
