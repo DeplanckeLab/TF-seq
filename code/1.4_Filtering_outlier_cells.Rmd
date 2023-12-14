@@ -1,0 +1,110 @@
+---
+title: "1.4 Filtering outlier cells of TF-seq data"
+author: "Vincent Gardeux"
+date: "2023/12/14"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
+suppressPackageStartupMessages(library(scater)) # isOutlier function
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+cat(bold("scater"), "version", as.character(packageVersion("scater")), "\n")
+cat(bold("Rfast"), "version", as.character(packageVersion("Rfast")), "\n")
+
+filtering_outlierCells <- function(exp_seurat, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75, exp_out_seurat){
+  data.seurat <- readRDS(exp_seurat)
+  message("Cell ranger object dimensions = [", nrow(data.seurat), " genes x ", ncol(data.seurat), " cells]")
+  
+  ### ---Features and Library size
+  libsize.drop <- isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type="lower", log=TRUE) # nCount_RNA == colSums(data.seurat)
+  features.drop <- isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA == as.vector(colSums(data.seurat > 0))
+  
+  ### --- Gene annotation
+  data.gene_annot <- fread("./metadata/GRCm38_gene_annot.tsv", data.table = F)
+  
+  ### --- Mitochondrial
+  mito.genes <- subset(data.gene_annot, is_mitochondrial)$ensembl_id
+  mito.genes <- mito.genes[mito.genes %in% rownames(data.seurat)]
+  data.seurat$percent.mito <- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  ### --- Ribosomal
+  ribo.genes <- subset(data.gene_annot, is_ribosomal)$ensembl_id
+  ribo.genes <- ribo.genes[ribo.genes %in% rownames(data.seurat)]
+  data.seurat$percent.rRNA <- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  ### --- Protein Coding
+  protCod.genes <- subset(data.gene_annot, biotype == "protein_coding")$ensembl_id
+  protCod.genes <- protCod.genes[protCod.genes %in% rownames(data.seurat)]
+  data.seurat$percent.ProtCod <- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  
+  # Filtering
+  data.seurat <- data.seurat[,features.drop < 1 & libsize.drop < 1 & data.seurat$percent.mito < max_pc_mito & data.seurat$percent.rRNA < max_pc_rRNA & data.seurat$percent.ProtCod > min_pc_protCod]
+  message("Filtered object dimensions = [", nrow(data.seurat), " genes x ", ncol(data.seurat), " cells]")
+  saveRDS(data.seurat, file = exp_out_seurat)
+}
+
+```
+
+Now, filtering each experiment, with specific parameters, and generating the Seurat object.
+
+# Exp 05 - enriched
+
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 06 - enriched
+
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 07 - enriched
+
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 08 - enriched
+
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 09 - enriched
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 10 - enriched
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 11 - enriched
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 12-13 - enriched
+```{r}
+filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds")
+```
+
