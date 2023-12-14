@@ -137,14 +137,14 @@ data.tf_read.top2 <- data.tf_read.top2[names(nCounts[nCounts > 5]),,drop=F]
 
 # Find the cutoff of the "Pseudo TF" thanks to kneepoint detection 
 PseudoTF.rate_order <- data.tf_read.top2[order(data.tf_read.top2$PseudoTF.rate, decreasing = T), "PseudoTF.rate", drop=F]
-cutoff <- kneepointDetection(PseudoTF.rate_order$PseudoTF.rate)
+cutoff <- SamSPECTRAL::kneepointDetection(PseudoTF.rate_order$PseudoTF.rate)
 
 # Filter cells based on cutoff kneepoint pseudo TF
 data.tf_read.top2 <- subset(data.tf_read.top2, PseudoTF.rate >= PseudoTF.rate_order[cutoff$MinIndex, "PseudoTF.rate"])
 
 # Now, find the cutoff of the "Main TF", thanks to kneepoint detection to identify singlets versus combinations (real and doublets)
 TFmax.rate_order <- data.tf_read.top2[order(data.tf_read.top2$TFmax.rate, decreasing = T), "TFmax.rate", drop=F]
-cutoff <- kneepointDetection(TFmax.rate_order$TFmax.rate)
+cutoff <- SamSPECTRAL::kneepointDetection(TFmax.rate_order$TFmax.rate)
 
 # Select cells based on cutoff kneepoint TF max rate of selected cells 
 data.tf_read.top2$singles <- data.tf_read.top2$TFmax.rate >= TFmax.rate_order[cutoff$MinIndex,"TFmax.rate"]
