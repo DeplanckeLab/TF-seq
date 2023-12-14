@@ -79,10 +79,83 @@ After filtering out these cells with potentially ambiguous TF attribution, we ro
 
 #### 1.3.2 Experiments 12-13
 Experiments 12-13 were a bit special since some cells could contain a combination of two TFs. Therefore the previously defined kneepoint algorithm cannot work.
-In this case, we implemented another algorithm, to robustly identify singlets and combinations.
+In this case, we implemented another algorithm, in two parts, for identifying singlets, doublets and cell combinations. 
+
+First, we sum the two top TFs for each cell barcode, to create a "pseudo TF", where we apply the kneepoint algorithm. Any non-selected TF is then filtered out. Next, we check which of the remaining TFs could be singlets, by focusing solely on the most abundant TF, using the same kneepoint algorithm. Finally, once singlets and "potential combination" are isolated, we check which of the "potential combination" were used in the experiment (see [here](metadata/C3H10_10X_Metadata_exp12-13_combination.txt)), and we filtered out all the "Doublets" that were not intended combinations.
 
 ```R
-# TODO
+## Cellranger matrix (output of 1.1)
+data.cell_ranger <- Seurat::Read10X_h5(filename = "filtered_feature_bc_matrix.h5", use.names = F)
+data.barcodes <- unlist(data.cell_ranger@Dimnames[2])
+
+# TF-cell mapping matrix (output of 1.2)
+data.tf_read <- data.table::fread("C3H10_10X_enriched.read_matrix.txt", data.table = F)
+rownames(data.tf_read) <- data.tf_read$TFName
+data.barcodes_tf <- colnames(data.tf_read)[3:ncol(data.tf_read)]
+
+# Overlap
+common.barcodes <- intersect(data.barcodes_tf, data.barcodes)
+data.tf_read <- data.tf_read[,common.barcodes] # Filtered TF Matrix
+
+# Get combinations
+meta_combinations <- data.table::fread("C3H10_10X_Metadata_exp12-13_combination.txt", data.table = F)
+rownames(meta_combinations) <- paste0(meta_combinations$TF1,"-",meta_combinations$TF2)
+
+# Precompute total TF read counts per cell barcode
+nCounts <- colSums(data.tf_read)
+
+# Calculate rate of main and second TF using Rfast package
+all.top2 <- Rfast::colnth(as.matrix(data.tf_read), rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 2)
+first.indexes <- Rfast::colnth(as.matrix(data.tf_read), index.return = T, rep(1,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+second.indexes <- Rfast::colnth(as.matrix(data.tf_read), index.return = T, rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+
+# Prepare output dataframe with rate of main and second TF
+data.tf_read.top2 <- data.frame(matrix(nrow = ncol(data.tf_read), ncol = 6), row.names = colnames(data.tf_read))
+colnames(data.tf_read.top2) <- c("TFmax", "TFmax.rate", "nMax", "TF2nd", "TF2nd.rate", "n2nd")
+
+# Fill it
+data.tf_read.top2$nMax <- all.top2[1,]
+data.tf_read.top2$TFmax.rate <- data.tf_read.top2$nMax / nCounts
+data.tf_read.top2$n2nd <- all.top2[2,]
+data.tf_read.top2$TF2nd.rate <- data.tf_read.top2$n2nd / nCounts
+data.tf_read.top2$TFmax <- rownames(data.tf_read)[first.indexes]
+data.tf_read.top2$TF2nd <- rownames(data.tf_read)[second.indexes]
+
+# Generate pseudo-TF as sum of top 2 TFs
+data.tf_read.top2$nPseudoTF <- data.tf_read.top2$nMax + data.tf_read.top2$n2nd
+data.tf_read.top2$PseudoTF.rate <- (data.tf_read.top2$nMax + data.tf_read.top2$n2nd) / nCounts
+
+# Remove top barcodes if n = 0
+data.tf_read.top2$TFmax[data.tf_read.top2$nMax == 0] <- NA
+data.tf_read.top2$TF2nd[data.tf_read.top2$n2nd == 0] <- NA
+
+# Which pair of TF could be a combination, based on metadata
+data.tf_read.top2$potential.combination <- paste0(data.tf_read.top2$TFmax,"-",data.tf_read.top2$TF2nd) %in% rownames(meta_combinations)
+
+# Filter cells with too low number of counts
+data.tf_read.top2 <- data.tf_read.top2[names(nCounts[nCounts > 5]),,drop=F]
+
+# Find the cutoff of the "Pseudo TF" thanks to kneepoint detection 
+PseudoTF.rate_order <- data.tf_read.top2[order(data.tf_read.top2$PseudoTF.rate, decreasing = T), "PseudoTF.rate", drop=F]
+cutoff <- kneepointDetection(PseudoTF.rate_order$PseudoTF.rate)
+
+# Filter cells based on cutoff kneepoint pseudo TF
+data.tf_read.top2 <- subset(data.tf_read.top2, PseudoTF.rate >= PseudoTF.rate_order[cutoff$MinIndex, "PseudoTF.rate"])
+
+# Now, find the cutoff of the "Main TF", thanks to kneepoint detection to identify singlets versus combinations (real and doublets)
+TFmax.rate_order <- data.tf_read.top2[order(data.tf_read.top2$TFmax.rate, decreasing = T), "TFmax.rate", drop=F]
+cutoff <- kneepointDetection(TFmax.rate_order$TFmax.rate)
+
+# Select cells based on cutoff kneepoint TF max rate of selected cells 
+data.tf_read.top2$singles <- data.tf_read.top2$TFmax.rate >= TFmax.rate_order[cutoff$MinIndex,"TFmax.rate"]
+
+# Remove Doublets (keep only combination and single TFs)
+data.tf_read.top2 <- subset(data.tf_read.top2, potential.combination == TRUE | singles == TRUE)
+
+# Assign TFs and combinations
+data.tf_read.top2$TF2nd[data.tf_read.top2$singles] <- NA
+data.tf_read.top2$TF <- meta_combinations[paste0(data.tf_read.top2$TFmax,"-",data.tf_read.top2$TF2nd), "combination"]
+data.tf_read.top2$TF[is.na(data.tf_read.top2$TF)] <- data.tf_read.top2$TFmax[is.na(data.tf_read.top2$TF)]
 ```
 
 ### 1.4. Filtering outlier cells
@@ -96,36 +169,36 @@ Here is the function that is performing this filtering:
 
 ```R
 filtering_outlierCells <- function(seurat_path, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75){
-  data.seurat <- readRDS(seurat_path) # Read Seurat object generated at step 1.3
+data.seurat <- readRDS(seurat_path) # Read Seurat object generated at step 1.3
 
-  ### ---Features and Library size
-  # Looking for outlier cells in the nCount_RNA distribution (returns TRUE/FALSE array)
-  libsize.drop <- scater::isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type="lower", log=TRUE) # nCount_RNA / colSums(data.seurat)
-  # Looking for outlier cells in the nFeature_RNA distribution (returns TRUE/FALSE array)
-  features.drop <- scater::isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA / as.vector(colSums(data.seurat > 0))
-  
-  ### --- Mitochondrial
-  mito.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.96_mito.annot.txt")
-  mito.genes <- mito.genes$ens_id[mito.genes$ens_id %in% rownames(data.seurat)]
-  # Calculating the ratio of mitochondrial reads for each cell
-  data.seurat$percent.mito <- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  ### --- Ribosomal
-  ribo.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.91_rRNA.annot.txt")
-  ribo.genes <- ribo.genes$ens_id[ribo.genes$ens_id %in% rownames(data.seurat)]
-  # Calculating the ratio of ribosomal reads for each cell
-  data.seurat$percent.rRNA <- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  ### --- Protein Coding
-  protCod.genes <- read.table("~/SVRAW1/prainer/TF_scRNAseq_04.2019/Metadata/GRCm38.96_Vector_data.annot.txt", sep = "\t")
-  protCod.genes <- subset(protCod.genes, biotype == "protein_coding")
-  protCod.genes <- protCod.genes$ens_id[protCod.genes$ens_id %in% rownames(data.seurat)]
-  # Calculating the ratio of protein coding reads for each cell
-  data.seurat$percent.ProtCod <- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  ### Running the filtering
-  data.seurat <- data.seurat[,features.drop < 1 & libsize.drop < 1 & data.seurat$percent.mito < max_pc_mito & data.seurat$percent.rRNA < max_pc_rRNA & data.seurat$percent.ProtCod > min_pc_protCod]
-  saveRDS(data.seurat, file = "...") # Saving the filtered Seurat object
+### ---Features and Library size
+# Looking for outlier cells in the nCount_RNA distribution (returns TRUE/FALSE array)
+libsize.drop <- scater::isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type="lower", log=TRUE) # nCount_RNA / colSums(data.seurat)
+# Looking for outlier cells in the nFeature_RNA distribution (returns TRUE/FALSE array)
+features.drop <- scater::isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA / as.vector(colSums(data.seurat > 0))
+
+### --- Mitochondrial
+mito.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.96_mito.annot.txt")
+mito.genes <- mito.genes$ens_id[mito.genes$ens_id %in% rownames(data.seurat)]
+# Calculating the ratio of mitochondrial reads for each cell
+data.seurat$percent.mito <- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+
+### --- Ribosomal
+ribo.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.91_rRNA.annot.txt")
+ribo.genes <- ribo.genes$ens_id[ribo.genes$ens_id %in% rownames(data.seurat)]
+# Calculating the ratio of ribosomal reads for each cell
+data.seurat$percent.rRNA <- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+
+### --- Protein Coding
+protCod.genes <- read.table("~/SVRAW1/prainer/TF_scRNAseq_04.2019/Metadata/GRCm38.96_Vector_data.annot.txt", sep = "\t")
+protCod.genes <- subset(protCod.genes, biotype == "protein_coding")
+protCod.genes <- protCod.genes$ens_id[protCod.genes$ens_id %in% rownames(data.seurat)]
+# Calculating the ratio of protein coding reads for each cell
+data.seurat$percent.ProtCod <- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+
+### Running the filtering
+data.seurat <- data.seurat[,features.drop < 1 & libsize.drop < 1 & data.seurat$percent.mito < max_pc_mito & data.seurat$percent.rRNA < max_pc_rRNA & data.seurat$percent.ProtCod > min_pc_protCod]
+saveRDS(data.seurat, file = "...") # Saving the filtered Seurat object
 }
 ```
 
