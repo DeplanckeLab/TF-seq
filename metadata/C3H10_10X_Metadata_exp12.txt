@@ -1,0 +1,53 @@
+Pparg_A6	Pparg_A6	GCTTGTCACGG	GTCCACTG	exp12-13	Also in two combination: Cebpa_1 + Pparg_A6 or Runx2 + Pparg_A6
+Pparg_G6	Pparg_G6	AGTGCGACCGG	ATTTAGCT	exp12-13	Also in combination Mycn_1 + Pparg_G6
+Pparg_1	Pparg_1	GATAATCCGTG	ATGCCTAC	exp12-13	Pparg_1
+Pparg_2	Pparg_2	CTGCGAAAGTG	AATTCTCT	exp12-13	Pparg_2
+Pparg_3	Pparg_3	TAAGAACTGGA	CCTTGGCT	exp12-13	Pparg_3
+Pparg_4	Pparg_4	GAACCTTAAGA	AGATACTA	exp12-13	Pparg_4
+Pparg_5	Pparg_5	GAGCAGACCTT	NNNNNNNN	exp12-13	Pparg_5
+Runx2	Runx2	ATGGGAGCTGA	TCCTTGAT	exp12-13	Also in combination Runx2 + Pparg_A6
+Runx2_1	Runx2_1	GTCGCGTTTAT	ACGTCGCT	exp12-13	Runx2_1
+Runx2_2	Runx2_2	CATAGGTTGTG	TAATTCTT	exp12-13	Runx2_2
+Runx2_3	Runx2_3	TCTCGGGACGT	AAAACATA	exp12-13	Runx2_3
+Runx2_4	Runx2_4	AACTTACAGGA	AATGATTT	exp12-13	Runx2_4
+Runx2_5	Runx2_5	CTGGACACGGC	TCCCCTTT	exp12-13	Also in combination Runx2_5 + Mycn_2
+Mycn	Mycn	CCGATGTCCTA	AGATCTAC	exp12-13	Mycn Single
+Mycn_1	Mycn_1	GACCCATGATA	AAGGCTCT	exp12-13	Also in combination Mycn_1 + Pparg_G6
+Mycn_2	Mycn_2	GAAATTAACAC	CAAAACAT	exp12-13	Also in combination Runx2_5 + Mycn_2
+Mycn_3	Mycn_3	CAAGTCTTGGG	CGACGACC	exp12-13	Also in combination Mycn_3 + Myog_BC9
+Mycn_4	Mycn_4	GGGACCCCATG	ACCTCTCT	exp12-13	Also in combination Mycn_4 + Cebpa_4
+Mycn_5	Mycn_5	GCGTTAATGAA	TTCTTATG	exp12-13	Mycn_5
+Mycn_6	Mycn_6	TTTCGCAATGA	TAGCCACA	exp12-13	Mycn_6
+Mycn_7	Mycn_7	TAAAAACTTTT	TCTGGGTT	exp12-13	Mycn_7
+Cebpa	Cebpa	GATGAGGCCTT	ATTCTTGA	exp12-13	Cebpa Single
+Cebpa_1	Cebpa_1	TTTGACTATGT	ACAACACG	exp12-13	Also in combination Cebpa_1 + Pparg_A6
+Cebpa_2	Cebpa_2	CACGGACCGTG	TTTGCGTT	exp12-13	Also in combination Cebpa_2 + Myog_BC8
+Cebpa_3	Cebpa_3	TAACACGGCCG	CGGTTTAT	exp12-13	Cebpa_3
+Cebpa_4	Cebpa_4	TACGTTAAACT	CGCGACTT	exp12-13	Also in combination Mycn_4 + Cebpa_4
+Cebpa_5	Cebpa_5	ATCTTTGGTGG	TTTGACGT	exp12-13	Cebpa_5
+Cebpa_6	Cebpa_6	CGTTGGGCTCA	TCATGATG	exp12-13	Cebpa_6
+Myog_BC1	Myog_BC1	GTTTACGAACA	CCACCCTA	exp12-13	Muscle lineage D1
+Myog_BC2	Myog_BC2	ATGATACGAAA	CTGATTTA	exp12-13	Muscle lineage D2
+Myog_BC3	Myog_BC3	TTAGCGCGCAA	GTCGGTGT	exp12-13	Muscle lineage D3
+Myog_BC4	Myog_BC4	TAGAGTGCCGG	CGCTTGCT	exp12-13	Muscle lineage D5
+Myog_BC5	Myog_BC5	GAGCTTAGCAC	AAGAGCTC	exp12-13	Muscle lineage D4
+Myog_BC6	Myog_BC6	CTCGGGTACTT	TGTTCTCC	exp12-13	Muscle lineage D0 no Dox
+Myog_BC7	Myog_BC7	GATGGAGGTTA	CATATACG	exp12-13	Myog_BC7
+Myog_BC8	Myog_BC8	ACGAACGGTAC	TGGAAGCT	exp12-13	Also in combination Cebpa_2 + Myog_BC8
+Myog_BC9	Myog_BC9	CGAAGAATCAA	CAAAATGT	exp12-13	Also in combination Mycn_3 + Myog_BC9
+Myog_BC10	Myog_BC10	CGTGTTATCCA	TACCGATT	exp12-13	Myog Single
+mCherry_BC10	mCherry_BC10	CAACAATGCGG	CTTTGGGT	exp12-13	Adipo lineage D5
+mCherry_BC11	mCherry_BC11	TTTTAAAACGG	TCAGATGG	exp12-13	Adipo lineage D4
+mCherry_BC12	mCherry_BC12	ACAAAATACGG	TGCATGTT	exp12-13	Adipo lineage D3
+mCherry_BC13	mCherry_BC13	CAAAAACCCGG	TGGTGTAT	exp12-13	Adipo lineage D1
+mCherry_BC14	mCherry_BC14	CAAAATAGCGG	TTTTTGAC	exp12-13	Controls D0 confluent with Dox
+mCherry_BC15	mCherry_BC15	ATCGTGATCGG	TTGGCATG	exp12-13	Controls D0 non confluent with Dox
+mCherry_BC17	mCherry_BC17	ATAATGCACGG	TTTATCAG	exp12-13	Controls D0 confluent  no Dox
+mCherry_BC1	mCherry_BC1	TTAAAAAGCGG	TCTTTGGA	exp12-13	Controls D0 confluent collagenase dissociation osteo with Dox
+mCherry_BC3	mCherry_BC3	AATAACCACGG	AGTATATT	exp12-13	mCherry_BC3
+mCherry_BC6	mCherry_BC6	CAAGAGTTCGG	TTTCTTAC	exp12-13	Osteo lineage D6
+mCherry_BC9	mCherry_BC9	AACAAAATCGG	TGAACGT-	exp12-13	Osteo lineage D5
+mCherry_P5F12	mCherry_P5F12	CGAATAAATAC	TCGTTTCA	exp12-13	Osteo lineage D7
+mCherry_P5G2	mCherry_P5G2	ACCTCCGTATA	TGGAGGTA	exp12-13	Osteo lineage D1
+mCherry_P5E11	mCherry_P5E11	CCATCACCGTG	GGTATTCA	exp12-13	Osteo lineage D2
+mCherry_P5G11	mCherry_P5G11	GCTGTTTTTCT	TGACTGCA	exp12-13	Osteo lineage D8
