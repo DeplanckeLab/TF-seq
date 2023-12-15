@@ -215,7 +215,16 @@ filtering_outlierCells("exp12-13", libsize_nmads = 6, features_nmads = 6, max_pc
 
 ### 1.5. Final dataset
 
+#### 1.5.1 Integration and filtering
+
 For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and D4/D5 adipocyte differentiation cells.<br/>
+
+#### 1.5.2 Cell cycle scoring
+
+https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv
+
+#### 1.5.3 Mature adipocytes
+
 Finally, we calculated an "adiposcore" on the D4/D5 adipocyte-differentiated cells, to keep only the truly Mature adipocytes, that we named "MatureAdipo". The function used to calculate this adiposcore follows:
 ```R
 TODO
