@@ -177,23 +177,22 @@ libsize.drop <- scater::isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, t
 # Looking for outlier cells in the nFeature_RNA distribution (returns TRUE/FALSE array)
 features.drop <- scater::isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA / as.vector(colSums(data.seurat > 0))
 
+### --- Gene annotation
+data.gene_annot <- fread("metadata/GRCm38_gene_annot.tsv", data.table = F)
+  
 ### --- Mitochondrial
-mito.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.96_mito.annot.txt")
-mito.genes <- mito.genes$ens_id[mito.genes$ens_id %in% rownames(data.seurat)]
-# Calculating the ratio of mitochondrial reads for each cell
+mito.genes <- subset(data.gene_annot, is_mitochondrial)$ensembl_id
+mito.genes <- mito.genes[mito.genes %in% rownames(data.seurat)]
 data.seurat$percent.mito <- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-
+  
 ### --- Ribosomal
-ribo.genes <- read.table("~/SVRAW1/prainer/Files/Mouse/data.annot/Mus_musculus.GRCm38.91_rRNA.annot.txt")
-ribo.genes <- ribo.genes$ens_id[ribo.genes$ens_id %in% rownames(data.seurat)]
-# Calculating the ratio of ribosomal reads for each cell
+ribo.genes <- subset(data.gene_annot, is_ribosomal)$ensembl_id
+ribo.genes <- ribo.genes[ribo.genes %in% rownames(data.seurat)]
 data.seurat$percent.rRNA <- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-
+  
 ### --- Protein Coding
-protCod.genes <- read.table("~/SVRAW1/prainer/TF_scRNAseq_04.2019/Metadata/GRCm38.96_Vector_data.annot.txt", sep = "\t")
-protCod.genes <- subset(protCod.genes, biotype == "protein_coding")
-protCod.genes <- protCod.genes$ens_id[protCod.genes$ens_id %in% rownames(data.seurat)]
-# Calculating the ratio of protein coding reads for each cell
+protCod.genes <- subset(data.gene_annot, biotype == "protein_coding")$ensembl_id
+protCod.genes <- protCod.genes[protCod.genes %in% rownames(data.seurat)]
 data.seurat$percent.ProtCod <- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
 
 ### Running the filtering
