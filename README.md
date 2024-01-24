@@ -35,7 +35,7 @@ For this step, we implemented a Java tool called [TF-seq Tools](https://github.c
 STAR --runMode alignReads --genomeDir ${vector_genome} --outFilterMultimapNmax 1 --readFilesCommand zcat --outSAMtype BAM Unsorted --readFilesIn TFEnrich_R2.fastq.gz
 mv Aligned.out.bam TFEnrich_R2.bam
 # Count the TF-barcodes
-java -jar /software/TFseqTools-1.0.jar Counter --r1 TFEnrich_R1.fastq.gz --r2 TFEnrich_R2.bam --tf C3H10_10X_Metadata.txt -p BU --UMI 12 --BC 16
+java -jar /software/TFseqTools-1.1.jar Counter --r1 TFEnrich_R1.fastq.gz --r2 TFEnrich_R2.bam --tf C3H10_10X_Metadata.txt -p BU --UMI 12 --BC 16
 ```
 **Note:** We provide the vector genome (.fasta file) [here](vector_sequence/pSIN-TRE-TFs-3-HA-puroR_BC_final.fa). The C3H10_10X_Metadata_expXX.txt files are accessible [here](metadata/).
 
@@ -215,24 +215,155 @@ filtering_outlierCells("exp12-13", libsize_nmads = 6, features_nmads = 6, max_pc
 
 ### 1.5. Final dataset
 
-#### 1.5.1 Integration and filtering
+#### 1.5.1 Cell cycle scoring and Dose calculation
 
-For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and D4/D5 adipocyte differentiation cells.<br/>
+For each of the previously created Seurat objects at **step 1.4**, we now calculate the **Cell Cycle Phase** using the `CellCycleScoring` function of Seurat, and the *mus musculus* Cell Cycle genes downloaded from [https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv](metadata/Mus_musculus.csv).
+We also calculate the **Dose** using the TF UMI matrices from the enriched libraries generated at **step 1.2**.
 
-#### 1.5.2 Cell cycle scoring
+**Of note:** We often call the Dose **-Vector-**, since we use the Vector-mapped read abundance as a proxy for the Dose.
 
-https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv
-
-#### 1.5.3 Mature adipocytes
-
-Finally, we calculated an "adiposcore" on the D4/D5 adipocyte-differentiated cells, to keep only the truly Mature adipocytes, that we named "MatureAdipo". The function used to calculate this adiposcore follows:
 ```R
-TODO
+# This is run for 'exp_seurat' & 'exp_tf_cell' in [exp05, exp06, exp07, exp08, exp09, exp10, exp11, exp12-13], with the corresponding Seurat object ('exp_seurat'), and TF UMI matrix from enriched library ('exp_tf_cell')
+cell_cycle <- function(exp_seurat, exp_tf_cell){
+  # Read Seurat object of previous step (1.4)
+  data.seurat <- readRDS(exp_seurat)
+  
+  # Putting Vector as metadata
+  data.seurat$Vector_10X <- data.seurat@assays$RNA@counts["Vector",]
+  data.seurat <- data.seurat[rownames(data.seurat) != "Vector",]
+  
+  # TF matrix
+  data.tf_read <- data.table::fread(exp_tf_cell, data.table = F)
+  rownames(data.tf_read) <- data.tf_read$TFName
+
+  # Combinations in exp12-13
+  meta_combinations <- data.table::fread("metadata/C3H10_10X_Metadata_exp12-13_combination.txt", data.table = F)
+  meta_combinations <- meta_combinations[!duplicated(meta_combinations$combination),]
+  rownames(meta_combinations) <- meta_combinations$combination
+
+  # Cell cycle genes (downloaded from https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv)
+  cellcycle_genes <- data.table::fread("metadata/Mus_musculus.csv", sep=",", data.table = F, stringsAsFactors = F)
+
+  # Creating the Dose metadata (Vector_UMI) by extracting the UMI values from the TF barcode matrix
+  data.seurat$Vector_UMI <- NA
+  for(i in 1:ncol(data.tf_read)){
+    data.seurat$Vector_UMI[i] <- data.tf_read[data.seurat$TF[i],i]
+    if(is.na(data.seurat$Vector_UMI[i])){
+      # Combination
+      tf1 <- meta_combinations[data.seurat$TF[i],"TF1"]
+      tf2 <- meta_combinations[data.seurat$TF[i],"TF2"]
+      data.seurat$Vector_UMI[i] <- data.tf_read[tf1,i] + data.tf_read[tf2,i]
+    }
+  }
+  data.seurat$Log_Vector_UMI <- log(1 + data.seurat$Vector_UMI)
+  
+  # Normalization (required for CellCycleScoring)
+  data.seurat <- Seurat::NormalizeData(data.seurat, verbose = F)
+  
+  # Calculate Cell Cycle score
+  data.seurat <- Seurat::CellCycleScoring(data.seurat, s.features = subset(cellcycle_genes, phase == "S")$geneID, g2m.features = subset(cellcycle_genes, phase == "G2/M")$geneID)
+  
+  # Calculate Cell Cycle score (corrected)
+  # Change threshold for Phase, Seurat assigns Phase if the max score is bigger than 0 which seems a too low threshold
+  data.seurat_tmp$Phase_corrected <- ifelse(pmax(data.seurat_tmp$G2M.Score, data.seurat_tmp$S.Score) > 0.1, as.character(data.seurat_tmp$Phase), "G1")
+  
+  # Saving Seurat object
+  saveRDS(data.seurat, file = ""...")
+}
 ```
 
+#### 1.5.2 D0 assignment, Adipo_ref & Myo_ref assignment, and TF renaming
+
+For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and reference adipocyte (Adipo_ref) and myocyte (Myo_ref) cells.<br/>
+
+#### 1.5.3 Integration
+
+Finally, we integrate all Seurat objects into the final atlas by using the integration tool of the Seurat package.
+
+```R
+# Here we assume 'all_exps' contains all Seurat objects for exp in [exp05, exp06, exp07, exp08, exp09, exp10, exp11, exp12-13]
+
+# First, Normalize and HVG on each Seurat object
+data.seurat_for_mnn <- list()
+for(exp in all_exps){
+  data.seurat <- all_exps[[exp]]
+  data.seurat$batch <- exp
+  data.seurat <- NormalizeData(data.seurat, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
+  data.seurat_for_mnn[[exp]] <- FindVariableFeatures(data.seurat, selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+# Then running the Seurat integration
+int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
+int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
+data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
+
+# Run the default Seurat pipeline on the integrated object
+data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
+data.seurat_integrated <- RunPCA(data.seurat_integrated, assay = "integrated", npcs = 200, verbose = F)
+data.seurat_integrated <- RunTSNE(data.seurat_integrated, reduction = "pca", dims = 1:200)
+data.seurat_integrated <- RunUMAP(data.seurat_integrated, reduction = "pca", dims = 1:200)
+data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
+
+# Save Integrated Seurat object
+saveRDS(data.seurat_integrated, "...")
+```
 ### 1.6. Calculating functional cells
 
-TODO
+We calculated **functional cells**, i.e. cells that are transcriptomically different from D0 control cells, by calculating the Euclidean distance of each TF cell to the D0 control cells, in the PCA space.
+
+**Of note: ** To avoid any bias, we've run the script below for each 1) TF, for each 2) batch, for each 3) cell cycle phase, i.e. 5880 combinations.
+
+```R
+# As mentioned before, we first filter the integrated atlas created in 1.5.3 based on one of the 5880 possible combination of 1) TF, 2) batch and 3) cell cycle phase, and create the **'seurat_object'**
+find_functional_cells <- function(seurat.object, nPCs = 10, threshold = 0.8, threshold.non_con = 0.8, threshold.con = 0.8){
+  # Normalizing and calculating PCA on the subset object
+  seurat.object <- NormalizeData(seurat.object, verbose = F) 
+  seurat.object <- suppressWarnings(FindVariableFeatures(seurat.object, verbose = F, selection.method = "vst"))
+  seurat.object <- ScaleData(seurat.object, verbose = F)
+  n_pcs <- min(nPCs + 1, ncol(seurat.object))-1
+  seurat.object <- RunPCA(seurat.object, npcs = n_pcs, features = VariableFeatures(seurat.object), verbose = F)
+  pca <- seurat.object@reductions$pca@cell.embeddings
+  
+  # Computing the 3 centroids for all D0 in PCA space
+  mean_D0s <- colMeans(pca[seurat.object$TF %in% c("D0", "D0_confluent"),])
+  mean_D0s_non_confluent <- colMeans(pca[seurat.object$TF == "D0",])
+  mean_D0s_confluent <- colMeans(pca[seurat.object$TF == "D0_confluent",])
+
+  # Distance of all cells to the 3 centroids
+  Dist_to_meanD0s <- apply(pca, 1, function(x){
+      pos.vector <- rbind(x, mean_D0s)
+      length.vectors <- dist(pos.vector, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors)
+  })
+  
+  Dist_to_meanD0s_non_confluent <- apply(pca, 1, function(x){
+      pos.vector_non_confluent <- rbind(x, mean_D0s_non_confluent)
+      length.vectors_non_confluent <- dist(pos.vector_non_confluent, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_non_confluent)
+  })
+  
+  Dist_to_meanD0s_confluent <- apply(pca, 1, function(x){
+      pos.vector_confluent <- rbind(x, mean_D0s_confluent)
+      length.vectors_confluent <- dist(pos.vector_confluent, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_confluent)
+  })
+  
+  # Compute threshold as quantile of D0 cells
+  distance_thresholded_D0 <- quantile(Dist_to_meanD0s[seurat.object$TF %in% c("D0", "D0_confluent")], threshold)
+  distance_thresholded_non_confluent <- quantile(Dist_to_meanD0s_non_confluent[seurat.object$TF %in% c("D0")], threshold.non_con)
+  distance_thresholded_confluent <- quantile(Dist_to_meanD0s_confluent[seurat.object$TF %in% c("D0_confluent")], threshold.con)
+  
+  # Extract FUNCTIONAL cells, i.e. cells that pass the threshold
+  cells.oi <- names(Dist_to_meanD0s)[Dist_to_meanD0s > distance_thresholded_D0]
+  cells.oi_non_confluent <- names(Dist_to_meanD0s_non_confluent)[Dist_to_meanD0s_non_confluent > distance_thresholded_non_confluent]
+  cells.oi_confluent <- names(Dist_to_meanD0s_confluent)[Dist_to_meanD0s_confluent > distance_thresholded_confluent]
+  cells.funct <- intersect(intersect(cells.oi, cells.oi_non_confluent), cells.oi_confluent)
+    
+  # FUNCTIONAL cells are the non-D0 cells
+  cells.funct <- names(seurat.object$TF[cells.funct] )[!seurat.object$TF[cells.funct] %in% c("D0", "D0_confluent")]
+  return(cells.funct)
+  }
+```
 
 ## 2. Manuscript Figures
 ### Figure 1 A
