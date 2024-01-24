@@ -19,13 +19,11 @@ First, I'm loading the required libraries & functions
 
 ```{r}
 suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
-suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
-suppressPackageStartupMessages(library(doSNOW)) # For parallelization
+suppressPackageStartupMessages(library(doParallel)) # For parallelization
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
 cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
-cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
-cat(bold("doSNOW"), "version", as.character(packageVersion("doSNOW")), "\n")
+cat(bold("doParallel"), "version", as.character(packageVersion("doParallel")), "\n")
 
 toReadableTime <- function(s){
   s <- round(s)
@@ -41,12 +39,12 @@ toReadableTime <- function(s){
   return(paste0(d, "d ", h, "h ", mn, "mn ", s, "s"))
 }
 
-find_functional_cells <- function(seurat.object, threshold, threshold.non_con, threshold.con){
+find_functional_cells <- function(seurat.object, nPCs = 10, threshold, threshold.non_con, threshold.con){
   # Normalizing and calculating PCA
   seurat.object <- NormalizeData(seurat.object, verbose = F) 
   seurat.object <- suppressWarnings(FindVariableFeatures(seurat.object, verbose = F, selection.method = "vst"))
   seurat.object <- ScaleData(seurat.object, verbose = F)
-  n_pcs <- min(21, ncol(seurat.object))-1
+  n_pcs <- min(nPCs + 1, ncol(seurat.object))-1
   seurat.object <- RunPCA(seurat.object, npcs = n_pcs, features = VariableFeatures(seurat.object), verbose = F)
   pca <- seurat.object@reductions$pca@cell.embeddings
   
@@ -96,9 +94,10 @@ find_functional_cells <- function(seurat.object, threshold, threshold.non_con, t
 # Reading integrated Seurat object from 1.5.3
 data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated.rds")
 
-# Creating log_vector and putting D0 vector to 0
-data.seurat$log_vector <- data.seurat$Log_Vector_UMI
-data.seurat$log_vector[data.seurat$TF == "D0" | data.seurat$TF == "D0_confluent"] <- 0  # D0 178, D0_confluent 166, no mCherry_BC14
+# Creating the 'Dose'. Which is basically the same as the 'Log_Vector_UMI', but the name will make more sense.
+# Here, I'm also putting D0 vector values to 0, because they are control cells.
+data.seurat$Dose <- data.seurat$Log_Vector_UMI
+data.seurat$Dose[data.seurat$TF == "D0" | data.seurat$TF == "D0_confluent"] <- 0
 
 # Creating the batch_overall, combining exp that were processed in the same batch
 data.seurat$batch_overall <- "batch1" # exp05 and exp06
@@ -120,13 +119,14 @@ data.seurat$orig.ident <- data.seurat$batch
 percentile.D0s <- 0.8
 percentile.D0noncon <- 0.8
 percentile.D0con <- 0.8
+num_pcs <- 10
 num_cores <- 32
 
 # I will proceed each phase, each batch, each TF separately
 allPhases <- c("G1","S","G2M")
 allBatches <- c("batch1","batch2","batch3","batch4","batch5")
 allTFs <- as.character(unique(data.seurat$TF))
-allTFs <- allTFs[!allTFs %in% c("D0", "D0_confluent", "MatureAdipo")]
+allTFs <- allTFs[!allTFs %in% c("D0", "D0_confluent", "Adipo_ref", "Myo_ref")]
 message("There are ", length(allTFs), " TFs to process")
 
 # All possible combinations
@@ -144,32 +144,29 @@ message("There are ", length(list_params), " combinations to run")
 
 # Set the number of cores/workers to use
 cl <- makeCluster(num_cores)
-registerDoSNOW(cl)
-
-progress.bar <- txtProgressBar(style = 3, min = 1, max = length(list_params))
+registerDoParallel(cl)
 
 # Perform computation for each combination of parameters (in parallel)
 start_time = Sys.time()
-
-funct_annotations <- foreach(i = 1:length(list_params), .packages = c("Seurat"), .combine = "c", .options.snow = list(progress = function(x) setTxtProgressBar(progress.bar, x))) %dopar% {
+funct_annotations <- foreach(i = 1:length(list_params), .packages = c("Seurat"), .combine = "c") %dopar% {
   condition <- data.seurat$Phase == list_params[[i]]$phase & data.seurat$batch_overall == list_params[[i]]$batch & data.seurat$TF %in% c("D0", "D0_confluent", list_params[[i]]$tf)
   if(sum(condition) == 0) return(NULL)
-  return(find_functional_cells(seurat.object = data.seurat[,condition], threshold = percentile.D0s, threshold.non_con = percentile.D0noncon, threshold.con = percentile.D0con))
+  return(find_functional_cells(seurat.object = data.seurat[,condition], nPCs = num_pcs, threshold = percentile.D0s, threshold.non_con = percentile.D0noncon, threshold.con = percentile.D0con))
 }
-
-close(progress.bar)
-stopCluster(cl)
-
 message("Total time = ", toReadableTime(as.numeric(Sys.time() - start_time, unit = "secs")))
 
-message(length(funct_annotations), " functional cells were found") # 19389 in final atlas # 19541 from my data
+# Stopping the parallelized threads
+stopCluster(cl)
+
+message(length(funct_annotations), " functional cells were found")
 ```
 
 # Updating the Seurat object
 ```{r}
 data.seurat$functional_cells <- F
 data.seurat$functional_cells[funct_annotations] <- T
-data.seurat$functional_cells[data.seurat$TF == "MatureAdipo"] <- "MatureAdipo"
+data.seurat$functional_cells[data.seurat$TF == "Adipo_ref"] <- "Adipo_ref"
+data.seurat$functional_cells[data.seurat$TF == "Myo_ref"] <- "Myo_ref"
 data.seurat$functional_cells[data.seurat$TF %in% c("D0", "D0_confluent")] <- "D0"
 
 saveRDS(data.seurat, "results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
