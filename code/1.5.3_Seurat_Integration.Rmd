@@ -1,0 +1,76 @@
+---
+title: "1.5.3 Seurat integration"
+author: "Vincent Gardeux"
+date: "2023/12/22"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+```
+
+### Integrate them all
+
+#### Loading the list of all merged exps from previous step
+```{r}
+data.seurat_all <- readRDS("results/C3H10_10X_all_exps_merged.rds")
+```
+
+#### Now performing the integration (this takes a while) ~22mn for FindIntegrationAnchors
+
+```{r}
+# First, Normalize and HVG on each Seurat object
+data.seurat_for_mnn <- list()
+for(exp in names(data.seurat_all)){
+  data.seurat <- data.seurat_all[[exp]]
+  data.seurat$batch <- exp
+  data.seurat <- NormalizeData(data.seurat, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
+  data.seurat_for_mnn[[exp]] <- FindVariableFeatures(data.seurat, selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+# Then running the Seurat integration
+int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
+int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
+data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
+
+# Dimensions
+DefaultAssay(data.seurat_integrated) <- "RNA"
+dim(data.seurat_integrated) # 55536 39063
+
+# Run the default Seurat pipeline on the integrated object
+data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
+data.seurat_integrated <- RunPCA(data.seurat_integrated, assay = "integrated", npcs = 200, verbose = F)
+data.seurat_integrated <- RunTSNE(data.seurat_integrated, reduction = "pca", dims = 1:200)
+data.seurat_integrated <- RunUMAP(data.seurat_integrated, reduction = "pca", dims = 1:200)
+data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
+
+# Save Integrated Seurat object
+saveRDS(data.seurat_integrated, "results/C3H10_10X_all_exps_merged_genefiltered_integrated.rds")
+```
+
+```{r}
+DimPlot(data.seurat_integrated, reduction = "tsne") + NoLegend()
+```
+
+```{r}
+DimPlot(data.seurat_integrated, reduction = "umap") + NoLegend()
+```
+
+```{r}
+DimPlot(data.seurat_integrated, reduction = "umap", group.by = "batch")
+```

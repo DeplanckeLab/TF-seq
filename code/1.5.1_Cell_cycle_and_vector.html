@@ -12,7 +12,7 @@
 <meta name="author" content="Vincent Gardeux" />
 
 
-<title>1.4 Filtering outlier cells of TF-seq data</title>
+<title>1.5.1 Cell cycle scoring and vector calculation</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1620,10 +1620,10 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">1.4 Filtering outlier cells of TF-seq
-data</h1>
+<h1 class="title toc-ignore">1.5.1 Cell cycle scoring and vector
+calculation</h1>
 <h4 class="author">Vincent Gardeux</h4>
-<h4 class="date">2023/12/14</h4>
+<h4 class="date">2023/12/15</h4>
 
 </div>
 
@@ -1633,98 +1633,247 @@ data</h1>
 <p>First, I’m loading the required libraries &amp; functions</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
-suppressPackageStartupMessages(library(scater)) # isOutlier function
+suppressPackageStartupMessages(library(Rfast)) # For colnth function
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
 cat(bold(&quot;Seurat&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Seurat&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## Seurat version 4.4.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;data.table&quot;), &quot;version&quot;, as.character(packageVersion(&quot;data.table&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## data.table version 1.14.8</code></pre>
-<pre class="r"><code>cat(bold(&quot;scater&quot;), &quot;version&quot;, as.character(packageVersion(&quot;scater&quot;)), &quot;\n&quot;)</code></pre>
-<pre><code>## scater version 1.28.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;Rfast&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Rfast&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## Rfast version 2.0.8</code></pre>
-<pre class="r"><code>filtering_outlierCells &lt;- function(exp_seurat, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75, exp_out_seurat){
+<pre class="r"><code>cell_cycle &lt;- function(exp_seurat, exp_tf_cell, suffix_cellnames, data_cellcycle_genes, exp_out_seurat){
+  # Get combinations (for exp12-13)
+  exp_combination_list &lt;- &quot;metadata/C3H10_10X_Metadata_exp12-13_combination.txt&quot;
+  meta_combinations &lt;- fread(exp_combination_list, data.table = F)
+  meta_combinations &lt;- meta_combinations[!duplicated(meta_combinations$combination),]
+  rownames(meta_combinations) &lt;- meta_combinations$combination
+  
+  # Read Seurat object of previous step
   data.seurat &lt;- readRDS(exp_seurat)
-  message(&quot;Cell ranger object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
   
-  ### ---Features and Library size
-  libsize.drop &lt;- isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type=&quot;lower&quot;, log=TRUE) # nCount_RNA == colSums(data.seurat)
-  features.drop &lt;- isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type=&quot;lower&quot;, log=TRUE) # nFeature_RNA == as.vector(colSums(data.seurat &gt; 0))
+  # Renaming cell adding the Exp (for later merging all exps)
+  data.seurat &lt;- RenameCells(data.seurat, new.names = paste0(colnames(data.seurat), suffix_cellnames))
   
-  ### --- Gene annotation
-  data.gene_annot &lt;- fread(&quot;metadata/GRCm38_gene_annot.tsv&quot;, data.table = F)
+  # Putting Vector as metadata
+  data.seurat$Vector_10X &lt;- data.seurat@assays$RNA@counts[&quot;Vector&quot;,]
+  data.seurat &lt;- data.seurat[rownames(data.seurat) != &quot;Vector&quot;,]
   
-  ### --- Mitochondrial
-  mito.genes &lt;- subset(data.gene_annot, is_mitochondrial)$ensembl_id
-  mito.genes &lt;- mito.genes[mito.genes %in% rownames(data.seurat)]
-  data.seurat$percent.mito &lt;- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  # TF matrix
+  data.tf_read &lt;- fread(exp_tf_cell, data.table = F)
+  rownames(data.tf_read) &lt;- data.tf_read$TFName
+  colnames(data.tf_read) &lt;- paste0(colnames(data.tf_read), suffix_cellnames)
+  data.tf_read &lt;- data.tf_read[,colnames(data.seurat)]
   
-  ### --- Ribosomal
-  ribo.genes &lt;- subset(data.gene_annot, is_ribosomal)$ensembl_id
-  ribo.genes &lt;- ribo.genes[ribo.genes %in% rownames(data.seurat)]
-  data.seurat$percent.rRNA &lt;- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  # Creating the Vector by extracting the UMI values from the TF barcode matrix
+  data.seurat$Vector_UMI &lt;- NA
+  for(i in 1:ncol(data.tf_read)){
+    data.seurat$Vector_UMI[i] &lt;- data.tf_read[data.seurat$TF[i],i]
+    if(is.na(data.seurat$Vector_UMI[i])){
+      # Combination
+      tf1 &lt;- meta_combinations[data.seurat$TF[i],&quot;TF1&quot;]
+      tf2 &lt;- meta_combinations[data.seurat$TF[i],&quot;TF2&quot;]
+      data.seurat$Vector_UMI[i] &lt;- data.tf_read[tf1,i] + data.tf_read[tf2,i]
+    }
+  }
+  data.seurat$Log_Vector_UMI &lt;- log(1 + data.seurat$Vector_UMI)
   
-  ### --- Protein Coding
-  protCod.genes &lt;- subset(data.gene_annot, biotype == &quot;protein_coding&quot;)$ensembl_id
-  protCod.genes &lt;- protCod.genes[protCod.genes %in% rownames(data.seurat)]
-  data.seurat$percent.ProtCod &lt;- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  # I don&#39;t filter the genes anymore
+  data.seurat_tmp &lt;- data.seurat
+  message(nrow(data.seurat), &quot; genes used for computation...&quot;)
+
+  # Normalization (required for CellCycleScoring)
+  data.seurat_tmp &lt;- NormalizeData(data.seurat_tmp, verbose = F)
   
-  # Filtering
-  data.seurat &lt;- data.seurat[,features.drop &lt; 1 &amp; libsize.drop &lt; 1 &amp; data.seurat$percent.mito &lt; max_pc_mito &amp; data.seurat$percent.rRNA &lt; max_pc_rRNA &amp; data.seurat$percent.ProtCod &gt; min_pc_protCod]
-  message(&quot;Filtered object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
+  # Calculate Cell Cycle score
+  data.seurat_tmp &lt;- CellCycleScoring(data.seurat_tmp, s.features = subset(data_cellcycle_genes, phase == &quot;S&quot;)$geneID, g2m.features = subset(data_cellcycle_genes, phase == &quot;G2/M&quot;)$geneID)
+  message(&quot;\nPhase: &quot;)
+  print(table(data.seurat_tmp$Phase))
+  
+  # Calculate Cell Cycle score (corrected)
+  # Change threshold for Phase, Seurat assigns Phase if the max score is bigger than 0 which seems a too low threshold
+  data.seurat_tmp$Phase_corrected &lt;- ifelse(pmax(data.seurat_tmp$G2M.Score, data.seurat_tmp$S.Score) &gt; 0.1, as.character(data.seurat_tmp$Phase), &quot;G1&quot;)
+  message(&quot;\nPhase corrected: &quot;)
+  print(table(data.seurat_tmp$Phase_corrected))
+  
+  # Transferring annotation to original Seurat object with all genes
+  data.seurat$Phase_corrected &lt;- data.seurat_tmp[,colnames(data.seurat)]$Phase_corrected
+  data.seurat$Phase &lt;- data.seurat_tmp[,colnames(data.seurat)]$Phase
+  data.seurat$Vector_10X &lt;- data.seurat_tmp[,colnames(data.seurat)]$Vector_10X
+  data.seurat$Vector_UMI &lt;- data.seurat_tmp[,colnames(data.seurat)]$Vector_UMI
+  data.seurat$Log_Vector_UMI &lt;- data.seurat_tmp[,colnames(data.seurat)]$Log_Vector_UMI
+  data.seurat$S.Score &lt;- data.seurat_tmp[,colnames(data.seurat)]$S.Score
+  data.seurat$G2M.Score &lt;- data.seurat_tmp[,colnames(data.seurat)]$G2M.Score
+
+  # Saving Seurat object
   saveRDS(data.seurat, file = exp_out_seurat)
 }</code></pre>
-<p>Now, filtering each experiment, with specific parameters, and
-generating the Seurat object.</p>
 </div>
-<div id="exp-05---enriched" class="section level1">
-<h1>Exp 05 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 2834 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2789 cells]</code></pre>
+<div id="load-cell-cycle-genes-from-httpsraw.githubusercontent.comhbctinyatlasmastercell_cyclemus_musculus.csv" class="section level2">
+<h2>Load cell cycle genes (from <a href="https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv" class="uri">https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv</a>)</h2>
+<pre class="r"><code>cellcycle_genes &lt;- fread(&quot;metadata/Mus_musculus.csv&quot;, sep=&quot;,&quot;, data.table = F, stringsAsFactors = F)
+message(nrow(cellcycle_genes), &quot; genes annotated as Cell Cycle genes, initially downloaded from https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv&quot;)</code></pre>
+<pre><code>## 97 genes annotated as Cell Cycle genes, initially downloaded from https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv</code></pre>
+<div id="exp-05" class="section level3">
+<h3>Exp 05</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp05_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-5&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 2202  272  315</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 2505  183  101</code></pre>
 </div>
-<div id="exp-06---enriched" class="section level1">
-<h1>Exp 06 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 3033 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2985 cells]</code></pre>
+<div id="exp-06" class="section level3">
+<h3>Exp 06</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp06_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-6&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 2366  304  315</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 2606  244  135</code></pre>
 </div>
-<div id="exp-07---enriched" class="section level1">
-<h1>Exp 07 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 7325 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 7218 cells]</code></pre>
+<div id="exp-07" class="section level3">
+<h3>Exp 07</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp07_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-7&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 5873  583  762</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 6202  522  494</code></pre>
 </div>
-<div id="exp-08---enriched" class="section level1">
-<h1>Exp 08 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 6650 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 6376 cells]</code></pre>
+<div id="exp-08" class="section level3">
+<h3>Exp 08</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp08_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-8&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 5235  542  599</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 5493  485  398</code></pre>
 </div>
-<div id="exp-09---enriched" class="section level1">
-<h1>Exp 09 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4825 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4763 cells]</code></pre>
+<div id="exp-09" class="section level3">
+<h3>Exp 09</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp09_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-9&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 3833  491  439</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 4023  439  301</code></pre>
 </div>
-<div id="exp-10---enriched" class="section level1">
-<h1>Exp 10 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4199 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4058 cells]</code></pre>
+<div id="exp-10" class="section level3">
+<h3>Exp 10</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp10_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-10&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 3349  357  352</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 3504  323  231</code></pre>
 </div>
-<div id="exp-11---enriched" class="section level1">
-<h1>Exp 11 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 5112 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 5016 cells]</code></pre>
+<div id="exp-11" class="section level3">
+<h3>Exp 11</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp11_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-1-11&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 4121  416  479</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 4386  362  268</code></pre>
 </div>
-<div id="exp-12-13---enriched" class="section level1">
-<h1>Exp 12-13 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 13601 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 13401 cells]</code></pre>
+<div id="exp-12-13" class="section level3">
+<h3>Exp 12-13</h3>
+<pre class="r"><code>cell_cycle(exp_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds&quot;,
+           exp_tf_cell = &quot;results/C3H10_10X_exp12-13_enriched.umi_matrix.txt&quot;,
+           suffix_cellnames = &quot;-12-13&quot;,
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;
+           )</code></pre>
+<pre><code>## 55536 genes used for computation...</code></pre>
+<pre><code>## 
+## Phase:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 8890 2075 2436</code></pre>
+<pre><code>## 
+## Phase corrected:</code></pre>
+<pre><code>## 
+##   G1  G2M    S 
+## 9561 1891 1949</code></pre>
+</div>
 </div>
 
 

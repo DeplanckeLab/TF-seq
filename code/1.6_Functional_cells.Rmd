@@ -1,0 +1,176 @@
+---
+title: "1.6 Computing functional cells"
+author: "Wangjie Liu / Vincent Gardeux"
+date: "2024/01/04"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
+suppressPackageStartupMessages(library(doSNOW)) # For parallelization
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+cat(bold("doSNOW"), "version", as.character(packageVersion("doSNOW")), "\n")
+
+toReadableTime <- function(s){
+  s <- round(s)
+  if(s < 60) return(paste0(s, "s"))
+  mn <- s %/% 60
+  s <- s %% 60
+  if(mn < 60) return(paste0(mn, "mn ", s, "s"))
+  h <- mn %/% 60
+  mn <- mn %% 60
+  if(h < 24) return(paste0(h, "h ",  mn, "mn ", s, "s"))
+  d <- h %/% 24
+  h <- h %% 24
+  return(paste0(d, "d ", h, "h ", mn, "mn ", s, "s"))
+}
+
+find_functional_cells <- function(seurat.object, threshold, threshold.non_con, threshold.con){
+  # Normalizing and calculating PCA
+  seurat.object <- NormalizeData(seurat.object, verbose = F) 
+  seurat.object <- suppressWarnings(FindVariableFeatures(seurat.object, verbose = F, selection.method = "vst"))
+  seurat.object <- ScaleData(seurat.object, verbose = F)
+  n_pcs <- min(21, ncol(seurat.object))-1
+  seurat.object <- RunPCA(seurat.object, npcs = n_pcs, features = VariableFeatures(seurat.object), verbose = F)
+  pca <- seurat.object@reductions$pca@cell.embeddings
+  
+  # Centroids for all D0 in PCA space
+  mean_D0s <- colMeans(pca[seurat.object$TF %in% c("D0", "D0_confluent"),])
+  mean_D0s_non_confluent <- colMeans(pca[seurat.object$TF == "D0",])
+  mean_D0s_confluent <- colMeans(pca[seurat.object$TF == "D0_confluent",])
+
+  # Distance of all cells to centroids
+  Dist_to_meanD0s <- apply(pca, 1, function(x){
+      pos.vector <- rbind(x, mean_D0s)
+      length.vectors <- dist(pos.vector, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors)
+  })
+  
+  Dist_to_meanD0s_non_confluent <- apply(pca, 1, function(x){
+      pos.vector_non_confluent <- rbind(x, mean_D0s_non_confluent)
+      length.vectors_non_confluent <- dist(pos.vector_non_confluent, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_non_confluent)
+  })
+  
+  Dist_to_meanD0s_confluent <- apply(pca, 1, function(x){
+      pos.vector_confluent <- rbind(x, mean_D0s_confluent)
+      length.vectors_confluent <- dist(pos.vector_confluent, method = "euclidean", diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_confluent)
+  })
+  
+  # Compute threshold as quantile of D0 cells
+  distance_thresholded_D0 <- quantile(Dist_to_meanD0s[seurat.object$TF %in% c("D0", "D0_confluent")], threshold)
+  distance_thresholded_non_confluent <- quantile(Dist_to_meanD0s_non_confluent[seurat.object$TF %in% c("D0")], threshold.non_con)
+  distance_thresholded_confluent <- quantile(Dist_to_meanD0s_confluent[seurat.object$TF %in% c("D0_confluent")], threshold.con)
+  
+  # Extract FUNCTIONAL cells, i.e. cells that pass the threshold
+  cells.oi <- names(Dist_to_meanD0s)[Dist_to_meanD0s > distance_thresholded_D0]
+  cells.oi_non_confluent <- names(Dist_to_meanD0s_non_confluent)[Dist_to_meanD0s_non_confluent > distance_thresholded_non_confluent]
+  cells.oi_confluent <- names(Dist_to_meanD0s_confluent)[Dist_to_meanD0s_confluent > distance_thresholded_confluent]
+  cells.funct <- intersect(intersect(cells.oi, cells.oi_non_confluent), cells.oi_confluent)
+    
+  # Non D0 FUNCTIONAL cells
+  cells.funct <- names(seurat.object$TF[cells.funct] )[!seurat.object$TF[cells.funct] %in% c("D0", "D0_confluent")]
+  return(cells.funct)
+}
+```
+
+# Adding a few metadata to prepare the calculation
+```{r}
+# Reading integrated Seurat object from 1.5.3
+data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated.rds")
+
+# Creating log_vector and putting D0 vector to 0
+data.seurat$log_vector <- data.seurat$Log_Vector_UMI
+data.seurat$log_vector[data.seurat$TF == "D0" | data.seurat$TF == "D0_confluent"] <- 0  # D0 178, D0_confluent 166, no mCherry_BC14
+
+# Creating the batch_overall, combining exp that were processed in the same batch
+data.seurat$batch_overall <- "batch1" # exp05 and exp06
+data.seurat$batch_overall[data.seurat$batch %in% c("exp07","exp08")] <- "batch2" 
+data.seurat$batch_overall[data.seurat$batch %in% c("exp09")] <- "batch3" 
+data.seurat$batch_overall[data.seurat$batch %in% c("exp10","exp11")] <- "batch4" 
+data.seurat$batch_overall[data.seurat$batch %in% c("exp12-13")] <- "batch5" 
+table(data.seurat$batch_overall)
+
+# Fixing metadata
+data.seurat$orig.ident <- data.seurat$batch
+```
+
+# Running the main parallel code for computing functional cells
+**Goal:** Identify bloby versus functional cells per TF
+**Method:** Search euclidean distance of TF cells to D0 +/ D0confluent in PCA space to identify functional versus non functional cells
+```{r}
+# Parameters
+percentile.D0s <- 0.8
+percentile.D0noncon <- 0.8
+percentile.D0con <- 0.8
+num_cores <- 32
+
+# I will proceed each phase, each batch, each TF separately
+allPhases <- c("G1","S","G2M")
+allBatches <- c("batch1","batch2","batch3","batch4","batch5")
+allTFs <- as.character(unique(data.seurat$TF))
+allTFs <- allTFs[!allTFs %in% c("D0", "D0_confluent", "MatureAdipo")]
+message("There are ", length(allTFs), " TFs to process")
+
+# All possible combinations
+list_params <- list()
+l <- 0
+for(p in allPhases){
+  for(b in allBatches){
+    for(t in allTFs){
+      l <- l + 1
+      list_params[[l]] <- list(phase = p, batch = b, tf = t)
+    }
+  }
+}
+message("There are ", length(list_params), " combinations to run")
+
+# Set the number of cores/workers to use
+cl <- makeCluster(num_cores)
+registerDoSNOW(cl)
+
+progress.bar <- txtProgressBar(style = 3, min = 1, max = length(list_params))
+
+# Perform computation for each combination of parameters (in parallel)
+start_time = Sys.time()
+
+funct_annotations <- foreach(i = 1:length(list_params), .packages = c("Seurat"), .combine = "c", .options.snow = list(progress = function(x) setTxtProgressBar(progress.bar, x))) %dopar% {
+  condition <- data.seurat$Phase == list_params[[i]]$phase & data.seurat$batch_overall == list_params[[i]]$batch & data.seurat$TF %in% c("D0", "D0_confluent", list_params[[i]]$tf)
+  if(sum(condition) == 0) return(NULL)
+  return(find_functional_cells(seurat.object = data.seurat[,condition], threshold = percentile.D0s, threshold.non_con = percentile.D0noncon, threshold.con = percentile.D0con))
+}
+
+close(progress.bar)
+stopCluster(cl)
+
+message("Total time = ", toReadableTime(as.numeric(Sys.time() - start_time, unit = "secs")))
+
+message(length(funct_annotations), " functional cells were found") # 19389 in final atlas # 19541 from my data
+```
+
+# Updating the Seurat object
+```{r}
+data.seurat$functional_cells <- F
+data.seurat$functional_cells[funct_annotations] <- T
+data.seurat$functional_cells[data.seurat$TF == "MatureAdipo"] <- "MatureAdipo"
+data.seurat$functional_cells[data.seurat$TF %in% c("D0", "D0_confluent")] <- "D0"
+
+saveRDS(data.seurat, "results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
+```

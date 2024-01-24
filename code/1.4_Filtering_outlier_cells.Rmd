@@ -37,7 +37,7 @@ filtering_outlierCells <- function(exp_seurat, libsize_nmads = 6, features_nmads
   features.drop <- isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type="lower", log=TRUE) # nFeature_RNA == as.vector(colSums(data.seurat > 0))
   
   ### --- Gene annotation
-  data.gene_annot <- fread("./metadata/GRCm38_gene_annot.tsv", data.table = F)
+  data.gene_annot <- fread("metadata/GRCm38_gene_annot.tsv", data.table = F)
   
   ### --- Mitochondrial
   mito.genes <- subset(data.gene_annot, is_mitochondrial)$ensembl_id
@@ -67,44 +67,44 @@ Now, filtering each experiment, with specific parameters, and generating the Seu
 # Exp 05 - enriched
 
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 06 - enriched
 
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds", libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 07 - enriched
 
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 08 - enriched
 
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 09 - enriched
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 10 - enriched
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 11 - enriched
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
 # Exp 12-13 - enriched
 ```{r}
-filtering_outlierCells(exp_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds")
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
