@@ -215,7 +215,7 @@ filtering_outlierCells("exp12-13", libsize_nmads = 6, features_nmads = 6, max_pc
 
 ### 1.5. Final dataset
 
-#### 1.5.1 Cell cycle scoring and Dose calculation
+#### 1.5.1 Cell cycle scoring and Dose calculation <sub>(see full code here: [[Rmd](code/1.5.1_Cell_cycle_and_vector.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.5.1_Cell_cycle_and_vector.html)])</sub>
 
 For each of the previously created Seurat objects at **step 1.4**, we now calculate the **Cell Cycle Phase** using the `CellCycleScoring` function of Seurat, and the *mus musculus* Cell Cycle genes downloaded from [https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv](metadata/Mus_musculus.csv).
 We also calculate the **Dose** using the TF UMI matrices from the enriched libraries generated at **step 1.2**.
@@ -272,11 +272,11 @@ cell_cycle <- function(exp_seurat, exp_tf_cell){
 }
 ```
 
-#### 1.5.2 D0 assignment, Adipo_ref & Myo_ref assignment, and TF renaming
+#### 1.5.2 D0 assignment, Adipo_ref & Myo_ref assignment, and TF renaming <sub>(see full code here: [[Rmd](code/1.5.2_D0_MatureAdipo_TF_renaming.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.5.2_D0_MatureAdipo_TF_renaming.html)])</sub>
 
 For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and reference adipocyte (Adipo_ref) and myocyte (Myo_ref) cells.<br/>
 
-#### 1.5.3 Integration
+#### 1.5.3 Integration <sub>(see full code here: [[Rmd](code/1.5.3_Seurat_Integration.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.5.3_Seurat_Integration.html)])</sub>
 
 Finally, we integrate all Seurat objects into the final atlas by using the integration tool of the Seurat package.
 
@@ -307,7 +307,7 @@ data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
 # Save Integrated Seurat object
 saveRDS(data.seurat_integrated, "...")
 ```
-### 1.6. Calculating functional cells
+### 1.6. Calculating functional cells <sub>(see full code here: [[Rmd](code/1.6_Functional_cells.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.6_Functional_cells.html)])</sub>
 
 We calculated **functional cells**, i.e. cells that are transcriptomically different from D0 control cells, by calculating the Euclidean distance of each TF cell to the D0 control cells, in the PCA space.
 
