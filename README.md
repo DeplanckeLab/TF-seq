@@ -220,7 +220,7 @@ filtering_outlierCells("exp12-13", libsize_nmads = 6, features_nmads = 6, max_pc
 For each of the previously created Seurat objects at **step 1.4**, we now calculate the **Cell Cycle Phase** using the `CellCycleScoring` function of Seurat, and the *mus musculus* Cell Cycle genes downloaded from [https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv](metadata/Mus_musculus.csv).
 We also calculate the **Dose** using the TF UMI matrices from the enriched libraries generated at **step 1.2**.
 
-**Of note:** We often call the Dose **-Vector-**, since we use the Vector-mapped read abundance as a proxy for the Dose.
+**Of note:** We often call the Dose 'Vector', since we use the Vector-mapped read abundance as a proxy for the Dose.
 
 ```R
 # This is run for 'exp_seurat' & 'exp_tf_cell' in [exp05, exp06, exp07, exp08, exp09, exp10, exp11, exp12-13], with the corresponding Seurat object ('exp_seurat'), and TF UMI matrix from enriched library ('exp_tf_cell')
@@ -311,7 +311,7 @@ saveRDS(data.seurat_integrated, "...")
 
 We calculated **functional cells**, i.e. cells that are transcriptomically different from D0 control cells, by calculating the Euclidean distance of each TF cell to the D0 control cells, in the PCA space.
 
-**Of note: ** To avoid any bias, we've run the script below for each 1) TF, for each 2) batch, for each 3) cell cycle phase, i.e. 5880 combinations.
+**Of note:** To avoid any bias, we've run the script below for each 1) TF, for each 2) batch, for each 3) cell cycle phase, i.e. 5880 combinations.
 
 ```R
 # As mentioned before, we first filter the integrated atlas created in 1.5.3 based on one of the 5880 possible combination of 1) TF, 2) batch and 3) cell cycle phase, and create the **'seurat_object'**
