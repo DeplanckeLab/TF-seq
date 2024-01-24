@@ -40,9 +40,9 @@ mCherry_BC10	mCherry_BC10	CAACAATGCGG	CTTTGGGT	exp12-13	Adipo lineage D5
 mCherry_BC11	mCherry_BC11	TTTTAAAACGG	TCAGATGG	exp12-13	Adipo lineage D4
 mCherry_BC12	mCherry_BC12	ACAAAATACGG	TGCATGTT	exp12-13	Adipo lineage D3
 mCherry_BC13	mCherry_BC13	CAAAAACCCGG	TGGTGTAT	exp12-13	Adipo lineage D1
-mCherry_BC14	mCherry_BC14	CAAAATAGCGG	TTTTTGAC	exp12-13	Controls D0 confluent with Dox
-mCherry_BC15	mCherry_BC15	ATCGTGATCGG	TTGGCATG	exp12-13	Controls D0 non confluent with Dox
-mCherry_BC17	mCherry_BC17	ATAATGCACGG	TTTATCAG	exp12-13	Controls D0 confluent  no Dox
+mCherry_BC14	mCherry_BC14	CAAAATAGCGG	TTTTTGAC	exp12-13	Controls D0 confluent with Dox (failed)
+mCherry_BC15	mCherry_BC15	ATCGTGATCGG	TTGGCATG	exp12-13	Controls D0 confluent no Dox
+mCherry_BC17	mCherry_BC17	ATAATGCACGG	TTTATCAG	exp12-13	Controls D0 non confluent with Dox
 mCherry_BC1	mCherry_BC1	TTAAAAAGCGG	TCTTTGGA	exp12-13	Controls D0 confluent collagenase dissociation osteo with Dox
 mCherry_BC3	mCherry_BC3	AATAACCACGG	AGTATATT	exp12-13	mCherry_BC3
 mCherry_BC6	mCherry_BC6	CAAGAGTTCGG	TTTCTTAC	exp12-13	Osteo lineage D6
