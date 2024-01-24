@@ -1,5 +1,5 @@
 ---
-title: "1.3 Assigning TF to cell barcodes for scTF-seq data"
+title: "Filtering of TF-seq data"
 author: "Vincent Gardeux"
 date: "2023/11/23"
 output:
@@ -21,12 +21,14 @@ First, I'm loading the required libraries & functions
 suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
 suppressPackageStartupMessages(library(SamSPECTRAL)) # For the kneepoint algorithm
+suppressPackageStartupMessages(library(scater)) # isOutlier function
 suppressPackageStartupMessages(library(Rfast)) # For colnth function
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
 cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
 cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
 cat(bold("SamSPECTRAL"), "version", as.character(packageVersion("SamSPECTRAL")), "\n")
+cat(bold("scater"), "version", as.character(packageVersion("scater")), "\n")
 cat(bold("Rfast"), "version", as.character(packageVersion("Rfast")), "\n")
 
 ## Kneepoint filtering and TF assignment
@@ -190,9 +192,9 @@ filtering_kneepoint_combination <- function(exp_cellranger, exp_tf_cell, exp_com
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp05_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp05_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp05_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp05_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -200,9 +202,9 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp06_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp06_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp06_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp06_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -210,9 +212,9 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp07_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp07_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp07_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp07_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -220,9 +222,9 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp08_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp08_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp08_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp08_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -230,9 +232,9 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp09_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp09_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp09_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp09_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -240,9 +242,9 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp10_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp10_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp10_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp10_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds"
 )
 ```
 
@@ -250,11 +252,12 @@ filtering_kneepoint(
 
 ```{r}
 filtering_kneepoint(
-  exp_cellranger = "./cellranger/C3H10_10X_exp11_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp11_enriched.read_matrix.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds"
+  exp_cellranger = "cellranger/C3H10_10X_exp11_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp11_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds"
 )
 ```
+
 
 # Exp12-13
 
@@ -264,13 +267,13 @@ There, it is special, since this study was sequenced twice (thus we need to merg
 
 ```{r}
 # Reading exp12
-TF_EXP12 <- fread("./results/C3H10_10X_exp12_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+TF_EXP12 <- fread("results/C3H10_10X_exp12_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
 # Adding back the '-1', since some cell barcodes are the same between exp12 and exp13
 colnames(TF_EXP12)[3:ncol(TF_EXP12)] <- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], "-1")
 message(ncol(TF_EXP12) - 2, " cells in exp12 TF matrix")
 
 # Reading exp13
-TF_EXP13 <- fread("./results/C3H10_10X_exp13_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+TF_EXP13 <- fread("results/C3H10_10X_exp13_enriched.read_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
 # Adding back the '-2', since some cell barcodes are the same between exp12 and exp13
 colnames(TF_EXP13)[3:ncol(TF_EXP13)] <- paste0(colnames(TF_EXP13)[3:ncol(TF_EXP13)], "-2")
 message(ncol(TF_EXP13) - 2, " cells in exp13 TF matrix")
@@ -281,19 +284,47 @@ message(ncol(TF_EXP13) - 2, " cells in exp13 TF matrix")
 TF_EXP12_13 <- cbind(TF_EXP12, TF_EXP13[3:ncol(TF_EXP13)])
 
 # Writing
-fwrite(TF_EXP12_13, file = "./results/C3H10_10X_exp12-13_enriched.read_matrix.txt", sep = "\t", quote = F, row.names = F, col.names = T)
+fwrite(TF_EXP12_13, file = "results/C3H10_10X_exp12-13_enriched.read_matrix.txt", sep = "\t", quote = F, row.names = F, col.names = T)
 
 message(ncol(TF_EXP12_13) - 2, " cells in merged TF matrix")
 rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
 ```
 
+# Let's aso create the merged matrix (for TF vector calculation): C3H10_10X_exp12-13_enriched.umi_matrix.txt
+
+```{r}
+# Reading exp12
+TF_EXP12 <- fread("results/C3H10_10X_exp12_enriched.umi_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+# Adding back the '-1', since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP12)[3:ncol(TF_EXP12)] <- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], "-1")
+message(ncol(TF_EXP12) - 2, " cells in exp12 TF matrix")
+
+# Reading exp13
+TF_EXP13 <- fread("results/C3H10_10X_exp13_enriched.umi_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
+# Adding back the '-2', since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP13)[3:ncol(TF_EXP13)] <- paste0(colnames(TF_EXP13)[3:ncol(TF_EXP13)], "-2")
+message(ncol(TF_EXP13) - 2, " cells in exp13 TF matrix")
+
+# Merging
+#all(TF_EXP12$TFName == TF_EXP13$TFName) # TRUE
+#all(TF_EXP12$TFId == TF_EXP13$TFId) # TRUE
+TF_EXP12_13 <- cbind(TF_EXP12, TF_EXP13[3:ncol(TF_EXP13)])
+
+# Writing
+fwrite(TF_EXP12_13, file = "results/C3H10_10X_exp12-13_enriched.umi_matrix.txt", sep = "\t", quote = F, row.names = F, col.names = T)
+
+message(ncol(TF_EXP12_13) - 2, " cells in merged TF matrix")
+rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
+```
+
+
 ## Kneepoint algo for exp12-13 - enriched
 
 ```{r}
 filtering_kneepoint_combination(
-  exp_cellranger = "./cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5",
-  exp_tf_cell = "./results/C3H10_10X_exp12-13_enriched.read_matrix.txt",
-  exp_combination_list = "./metadata/C3H10_10X_Metadata_exp12-13_combination.txt",
-  exp_out_seurat = "./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
+  exp_cellranger = "cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp12-13_enriched.read_matrix.txt",
+  exp_combination_list = "metadata/C3H10_10X_Metadata_exp12-13_combination.txt",
+  exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
 ```
 

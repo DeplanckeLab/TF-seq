@@ -1,0 +1,193 @@
+---
+title: "1.5.1 Cell cycle scoring and vector calculation"
+author: "Vincent Gardeux"
+date: "2023/12/15"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
+suppressPackageStartupMessages(library(Rfast)) # For colnth function
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+cat(bold("Rfast"), "version", as.character(packageVersion("Rfast")), "\n")
+
+cell_cycle <- function(exp_seurat, exp_tf_cell, suffix_cellnames, data_cellcycle_genes, exp_out_seurat){
+  # Get combinations (for exp12-13)
+  exp_combination_list <- "metadata/C3H10_10X_Metadata_exp12-13_combination.txt"
+  meta_combinations <- fread(exp_combination_list, data.table = F)
+  meta_combinations <- meta_combinations[!duplicated(meta_combinations$combination),]
+  rownames(meta_combinations) <- meta_combinations$combination
+  
+  # Read Seurat object of previous step
+  data.seurat <- readRDS(exp_seurat)
+  
+  # Renaming cell adding the Exp (for later merging all exps)
+  data.seurat <- RenameCells(data.seurat, new.names = paste0(colnames(data.seurat), suffix_cellnames))
+  
+  # Putting Vector as metadata
+  data.seurat$Vector_10X <- data.seurat@assays$RNA@counts["Vector",]
+  data.seurat <- data.seurat[rownames(data.seurat) != "Vector",]
+  
+  # TF matrix
+  data.tf_read <- fread(exp_tf_cell, data.table = F)
+  rownames(data.tf_read) <- data.tf_read$TFName
+  colnames(data.tf_read) <- paste0(colnames(data.tf_read), suffix_cellnames)
+  data.tf_read <- data.tf_read[,colnames(data.seurat)]
+  
+  # Creating the Vector by extracting the UMI values from the TF barcode matrix
+  data.seurat$Vector_UMI <- NA
+  for(i in 1:ncol(data.tf_read)){
+    data.seurat$Vector_UMI[i] <- data.tf_read[data.seurat$TF[i],i]
+    if(is.na(data.seurat$Vector_UMI[i])){
+      # Combination
+      tf1 <- meta_combinations[data.seurat$TF[i],"TF1"]
+      tf2 <- meta_combinations[data.seurat$TF[i],"TF2"]
+      data.seurat$Vector_UMI[i] <- data.tf_read[tf1,i] + data.tf_read[tf2,i]
+    }
+  }
+  data.seurat$Log_Vector_UMI <- log(1 + data.seurat$Vector_UMI)
+  
+  # I don't filter the genes anymore
+  data.seurat_tmp <- data.seurat
+  message(nrow(data.seurat), " genes used for computation...")
+
+  # Normalization (required for CellCycleScoring)
+  data.seurat_tmp <- NormalizeData(data.seurat_tmp, verbose = F)
+  
+  # Calculate Cell Cycle score
+  data.seurat_tmp <- CellCycleScoring(data.seurat_tmp, s.features = subset(data_cellcycle_genes, phase == "S")$geneID, g2m.features = subset(data_cellcycle_genes, phase == "G2/M")$geneID)
+  message("\nPhase: ")
+  print(table(data.seurat_tmp$Phase))
+  
+  # Calculate Cell Cycle score (corrected)
+  # Change threshold for Phase, Seurat assigns Phase if the max score is bigger than 0 which seems a too low threshold
+  data.seurat_tmp$Phase_corrected <- ifelse(pmax(data.seurat_tmp$G2M.Score, data.seurat_tmp$S.Score) > 0.1, as.character(data.seurat_tmp$Phase), "G1")
+  message("\nPhase corrected: ")
+  print(table(data.seurat_tmp$Phase_corrected))
+  
+  # Transferring annotation to original Seurat object with all genes
+  data.seurat$Phase_corrected <- data.seurat_tmp[,colnames(data.seurat)]$Phase_corrected
+  data.seurat$Phase <- data.seurat_tmp[,colnames(data.seurat)]$Phase
+  data.seurat$Vector_10X <- data.seurat_tmp[,colnames(data.seurat)]$Vector_10X
+  data.seurat$Vector_UMI <- data.seurat_tmp[,colnames(data.seurat)]$Vector_UMI
+  data.seurat$Log_Vector_UMI <- data.seurat_tmp[,colnames(data.seurat)]$Log_Vector_UMI
+  data.seurat$S.Score <- data.seurat_tmp[,colnames(data.seurat)]$S.Score
+  data.seurat$G2M.Score <- data.seurat_tmp[,colnames(data.seurat)]$G2M.Score
+
+  # Saving Seurat object
+  saveRDS(data.seurat, file = exp_out_seurat)
+}
+```
+
+## Load cell cycle genes (from https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv)
+
+```{r}
+cellcycle_genes <- fread("metadata/Mus_musculus.csv", sep=",", data.table = F, stringsAsFactors = F)
+message(nrow(cellcycle_genes), " genes annotated as Cell Cycle genes, initially downloaded from https://raw.githubusercontent.com/hbc/tinyatlas/master/cell_cycle/Mus_musculus.csv")
+```
+
+### Exp 05
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp05_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-5",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 06
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp06_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-6",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 07
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp07_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-7",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+
+### Exp 08
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp08_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-8",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 09
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp09_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-9",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 10
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp10_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-10",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 11
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp11_enriched.umi_matrix.txt",
+           suffix_cellnames = "-1-11",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+### Exp 12-13
+
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp12-13_enriched.umi_matrix.txt",
+           suffix_cellnames = "-12-13",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+

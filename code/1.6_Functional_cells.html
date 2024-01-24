@@ -9,10 +9,10 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Vincent Gardeux" />
+<meta name="author" content="Wangjie Liu / Vincent Gardeux" />
 
 
-<title>1.4 Filtering outlier cells of TF-seq data</title>
+<title>1.6 Computing functional cells</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1620,10 +1620,9 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">1.4 Filtering outlier cells of TF-seq
-data</h1>
-<h4 class="author">Vincent Gardeux</h4>
-<h4 class="date">2023/12/14</h4>
+<h1 class="title toc-ignore">1.6 Computing functional cells</h1>
+<h4 class="author">Wangjie Liu / Vincent Gardeux</h4>
+<h4 class="date">2024/01/04</h4>
 
 </div>
 
@@ -1633,98 +1632,505 @@ data</h1>
 <p>First, I’m loading the required libraries &amp; functions</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
-suppressPackageStartupMessages(library(scater)) # isOutlier function
+suppressPackageStartupMessages(library(doSNOW)) # For parallelization
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
 cat(bold(&quot;Seurat&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Seurat&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## Seurat version 4.4.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;data.table&quot;), &quot;version&quot;, as.character(packageVersion(&quot;data.table&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## data.table version 1.14.8</code></pre>
-<pre class="r"><code>cat(bold(&quot;scater&quot;), &quot;version&quot;, as.character(packageVersion(&quot;scater&quot;)), &quot;\n&quot;)</code></pre>
-<pre><code>## scater version 1.28.0</code></pre>
-<pre class="r"><code>cat(bold(&quot;Rfast&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Rfast&quot;)), &quot;\n&quot;)</code></pre>
-<pre><code>## Rfast version 2.0.8</code></pre>
-<pre class="r"><code>filtering_outlierCells &lt;- function(exp_seurat, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75, exp_out_seurat){
-  data.seurat &lt;- readRDS(exp_seurat)
-  message(&quot;Cell ranger object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
+<pre class="r"><code>cat(bold(&quot;doSNOW&quot;), &quot;version&quot;, as.character(packageVersion(&quot;doSNOW&quot;)), &quot;\n&quot;)</code></pre>
+<pre><code>## doSNOW version 1.0.20</code></pre>
+<pre class="r"><code>toReadableTime &lt;- function(s){
+  s &lt;- round(s)
+  if(s &lt; 60) return(paste0(s, &quot;s&quot;))
+  mn &lt;- s %/% 60
+  s &lt;- s %% 60
+  if(mn &lt; 60) return(paste0(mn, &quot;mn &quot;, s, &quot;s&quot;))
+  h &lt;- mn %/% 60
+  mn &lt;- mn %% 60
+  if(h &lt; 24) return(paste0(h, &quot;h &quot;,  mn, &quot;mn &quot;, s, &quot;s&quot;))
+  d &lt;- h %/% 24
+  h &lt;- h %% 24
+  return(paste0(d, &quot;d &quot;, h, &quot;h &quot;, mn, &quot;mn &quot;, s, &quot;s&quot;))
+}
+
+find_functional_cells &lt;- function(seurat.object, threshold, threshold.non_con, threshold.con){
+  # Normalizing and calculating PCA
+  seurat.object &lt;- NormalizeData(seurat.object, verbose = F) 
+  seurat.object &lt;- suppressWarnings(FindVariableFeatures(seurat.object, verbose = F, selection.method = &quot;vst&quot;))
+  seurat.object &lt;- ScaleData(seurat.object, verbose = F)
+  n_pcs &lt;- min(21, ncol(seurat.object))-1
+  seurat.object &lt;- RunPCA(seurat.object, npcs = n_pcs, features = VariableFeatures(seurat.object), verbose = F)
+  pca &lt;- seurat.object@reductions$pca@cell.embeddings
   
-  ### ---Features and Library size
-  libsize.drop &lt;- isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type=&quot;lower&quot;, log=TRUE) # nCount_RNA == colSums(data.seurat)
-  features.drop &lt;- isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type=&quot;lower&quot;, log=TRUE) # nFeature_RNA == as.vector(colSums(data.seurat &gt; 0))
+  # Centroids for all D0 in PCA space
+  mean_D0s &lt;- colMeans(pca[seurat.object$TF %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;),])
+  mean_D0s_non_confluent &lt;- colMeans(pca[seurat.object$TF == &quot;D0&quot;,])
+  mean_D0s_confluent &lt;- colMeans(pca[seurat.object$TF == &quot;D0_confluent&quot;,])
+
+  # Distance of all cells to centroids
+  Dist_to_meanD0s &lt;- apply(pca, 1, function(x){
+      pos.vector &lt;- rbind(x, mean_D0s)
+      length.vectors &lt;- dist(pos.vector, method = &quot;euclidean&quot;, diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors)
+  })
   
-  ### --- Gene annotation
-  data.gene_annot &lt;- fread(&quot;metadata/GRCm38_gene_annot.tsv&quot;, data.table = F)
+  Dist_to_meanD0s_non_confluent &lt;- apply(pca, 1, function(x){
+      pos.vector_non_confluent &lt;- rbind(x, mean_D0s_non_confluent)
+      length.vectors_non_confluent &lt;- dist(pos.vector_non_confluent, method = &quot;euclidean&quot;, diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_non_confluent)
+  })
   
-  ### --- Mitochondrial
-  mito.genes &lt;- subset(data.gene_annot, is_mitochondrial)$ensembl_id
-  mito.genes &lt;- mito.genes[mito.genes %in% rownames(data.seurat)]
-  data.seurat$percent.mito &lt;- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  Dist_to_meanD0s_confluent &lt;- apply(pca, 1, function(x){
+      pos.vector_confluent &lt;- rbind(x, mean_D0s_confluent)
+      length.vectors_confluent &lt;- dist(pos.vector_confluent, method = &quot;euclidean&quot;, diag = F, upper = F, p = 2)[1] # p = 2, euclidean distance
+      return(length.vectors_confluent)
+  })
   
-  ### --- Ribosomal
-  ribo.genes &lt;- subset(data.gene_annot, is_ribosomal)$ensembl_id
-  ribo.genes &lt;- ribo.genes[ribo.genes %in% rownames(data.seurat)]
-  data.seurat$percent.rRNA &lt;- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
+  # Compute threshold as quantile of D0 cells
+  distance_thresholded_D0 &lt;- quantile(Dist_to_meanD0s[seurat.object$TF %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;)], threshold)
+  distance_thresholded_non_confluent &lt;- quantile(Dist_to_meanD0s_non_confluent[seurat.object$TF %in% c(&quot;D0&quot;)], threshold.non_con)
+  distance_thresholded_confluent &lt;- quantile(Dist_to_meanD0s_confluent[seurat.object$TF %in% c(&quot;D0_confluent&quot;)], threshold.con)
   
-  ### --- Protein Coding
-  protCod.genes &lt;- subset(data.gene_annot, biotype == &quot;protein_coding&quot;)$ensembl_id
-  protCod.genes &lt;- protCod.genes[protCod.genes %in% rownames(data.seurat)]
-  data.seurat$percent.ProtCod &lt;- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  # Filtering
-  data.seurat &lt;- data.seurat[,features.drop &lt; 1 &amp; libsize.drop &lt; 1 &amp; data.seurat$percent.mito &lt; max_pc_mito &amp; data.seurat$percent.rRNA &lt; max_pc_rRNA &amp; data.seurat$percent.ProtCod &gt; min_pc_protCod]
-  message(&quot;Filtered object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
-  saveRDS(data.seurat, file = exp_out_seurat)
+  # Extract FUNCTIONAL cells, i.e. cells that pass the threshold
+  cells.oi &lt;- names(Dist_to_meanD0s)[Dist_to_meanD0s &gt; distance_thresholded_D0]
+  cells.oi_non_confluent &lt;- names(Dist_to_meanD0s_non_confluent)[Dist_to_meanD0s_non_confluent &gt; distance_thresholded_non_confluent]
+  cells.oi_confluent &lt;- names(Dist_to_meanD0s_confluent)[Dist_to_meanD0s_confluent &gt; distance_thresholded_confluent]
+  cells.funct &lt;- intersect(intersect(cells.oi, cells.oi_non_confluent), cells.oi_confluent)
+    
+  # Non D0 FUNCTIONAL cells
+  cells.funct &lt;- names(seurat.object$TF[cells.funct] )[!seurat.object$TF[cells.funct] %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;)]
+  return(cells.funct)
 }</code></pre>
-<p>Now, filtering each experiment, with specific parameters, and
-generating the Seurat object.</p>
 </div>
-<div id="exp-05---enriched" class="section level1">
-<h1>Exp 05 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 2834 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2789 cells]</code></pre>
+<div id="adding-a-few-metadata-to-prepare-the-calculation" class="section level1">
+<h1>Adding a few metadata to prepare the calculation</h1>
+<pre class="r"><code># Reading integrated Seurat object from 1.5.3
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_all_exps_merged_genefiltered_integrated.rds&quot;)
+
+# Creating log_vector and putting D0 vector to 0
+data.seurat$log_vector &lt;- data.seurat$Log_Vector_UMI
+data.seurat$log_vector[data.seurat$TF == &quot;D0&quot; | data.seurat$TF == &quot;D0_confluent&quot;] &lt;- 0  # D0 178, D0_confluent 166, no mCherry_BC14
+
+# Creating the batch_overall, combining exp that were processed in the same batch
+data.seurat$batch_overall &lt;- &quot;batch1&quot; # exp05 and exp06
+data.seurat$batch_overall[data.seurat$batch %in% c(&quot;exp07&quot;,&quot;exp08&quot;)] &lt;- &quot;batch2&quot; 
+data.seurat$batch_overall[data.seurat$batch %in% c(&quot;exp09&quot;)] &lt;- &quot;batch3&quot; 
+data.seurat$batch_overall[data.seurat$batch %in% c(&quot;exp10&quot;,&quot;exp11&quot;)] &lt;- &quot;batch4&quot; 
+data.seurat$batch_overall[data.seurat$batch %in% c(&quot;exp12-13&quot;)] &lt;- &quot;batch5&quot; 
+table(data.seurat$batch_overall)</code></pre>
+<pre><code>## 
+## batch1 batch2 batch3 batch4 batch5 
+##   4605  11496   4094   7417  11451</code></pre>
+<pre class="r"><code># Fixing metadata
+data.seurat$orig.ident &lt;- data.seurat$batch</code></pre>
 </div>
-<div id="exp-06---enriched" class="section level1">
-<h1>Exp 06 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 3033 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2985 cells]</code></pre>
+<div id="running-the-main-parallel-code-for-computing-functional-cells" class="section level1">
+<h1>Running the main parallel code for computing functional cells</h1>
+<p><strong>Goal:</strong> Identify bloby versus functional cells per TF
+<strong>Method:</strong> Search euclidean distance of TF cells to D0 +/
+D0confluent in PCA space to identify functional versus non functional
+cells</p>
+<pre class="r"><code># Parameters
+percentile.D0s &lt;- 0.8
+percentile.D0noncon &lt;- 0.8
+percentile.D0con &lt;- 0.8
+num_cores &lt;- 32
+
+# I will proceed each phase, each batch, each TF separately
+allPhases &lt;- c(&quot;G1&quot;,&quot;S&quot;,&quot;G2M&quot;)
+allBatches &lt;- c(&quot;batch1&quot;,&quot;batch2&quot;,&quot;batch3&quot;,&quot;batch4&quot;,&quot;batch5&quot;)
+allTFs &lt;- as.character(unique(data.seurat$TF))
+allTFs &lt;- allTFs[!allTFs %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;, &quot;MatureAdipo&quot;)]
+message(&quot;There are &quot;, length(allTFs), &quot; TFs to process&quot;)</code></pre>
+<pre><code>## There are 392 TFs to process</code></pre>
+<pre class="r"><code># All possible combinations
+list_params &lt;- list()
+l &lt;- 0
+for(p in allPhases){
+  for(b in allBatches){
+    for(t in allTFs){
+      l &lt;- l + 1
+      list_params[[l]] &lt;- list(phase = p, batch = b, tf = t)
+    }
+  }
+}
+message(&quot;There are &quot;, length(list_params), &quot; combinations to run&quot;)</code></pre>
+<pre><code>## There are 5880 combinations to run</code></pre>
+<pre class="r"><code># Set the number of cores/workers to use
+cl &lt;- makeCluster(num_cores)
+registerDoSNOW(cl)
+
+progress.bar &lt;- txtProgressBar(style = 3, min = 1, max = length(list_params))
+
+# Perform computation for each combination of parameters (in parallel)
+start_time = Sys.time()
+
+funct_annotations &lt;- foreach(i = 1:length(list_params), .packages = c(&quot;Seurat&quot;), .combine = &quot;c&quot;, .options.snow = list(progress = function(x) setTxtProgressBar(progress.bar, x))) %dopar% {
+  condition &lt;- data.seurat$Phase == list_params[[i]]$phase &amp; data.seurat$batch_overall == list_params[[i]]$batch &amp; data.seurat$TF %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;, list_params[[i]]$tf)
+  if(sum(condition) == 0) return(NULL)
+  return(find_functional_cells(seurat.object = data.seurat[,condition], threshold = percentile.D0s, threshold.non_con = percentile.D0noncon, threshold.con = percentile.D0con))
+}</code></pre>
+<pre><code>## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |                                                                      |   1%
+  |                                                                            
+  |=                                                                     |   1%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |==                                                                    |   2%
+  |                                                                            
+  |==                                                                    |   3%
+  |                                                                            
+  |==                                                                    |   4%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |===                                                                   |   5%
+  |                                                                            
+  |====                                                                  |   5%
+  |                                                                            
+  |====                                                                  |   6%
+  |                                                                            
+  |=====                                                                 |   6%
+  |                                                                            
+  |=====                                                                 |   7%
+  |                                                                            
+  |=====                                                                 |   8%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |======                                                                |   9%
+  |                                                                            
+  |=======                                                               |   9%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |=======                                                               |  11%
+  |                                                                            
+  |========                                                              |  11%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |=========                                                             |  12%
+  |                                                                            
+  |=========                                                             |  13%
+  |                                                                            
+  |=========                                                             |  14%
+  |                                                                            
+  |==========                                                            |  14%
+  |                                                                            
+  |==========                                                            |  15%
+  |                                                                            
+  |===========                                                           |  15%
+  |                                                                            
+  |===========                                                           |  16%
+  |                                                                            
+  |============                                                          |  16%
+  |                                                                            
+  |============                                                          |  17%
+  |                                                                            
+  |============                                                          |  18%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |=============                                                         |  19%
+  |                                                                            
+  |==============                                                        |  19%
+  |                                                                            
+  |==============                                                        |  20%
+  |                                                                            
+  |==============                                                        |  21%
+  |                                                                            
+  |===============                                                       |  21%
+  |                                                                            
+  |===============                                                       |  22%
+  |                                                                            
+  |================                                                      |  22%
+  |                                                                            
+  |================                                                      |  23%
+  |                                                                            
+  |================                                                      |  24%
+  |                                                                            
+  |=================                                                     |  24%
+  |                                                                            
+  |=================                                                     |  25%
+  |                                                                            
+  |==================                                                    |  25%
+  |                                                                            
+  |==================                                                    |  26%
+  |                                                                            
+  |===================                                                   |  26%
+  |                                                                            
+  |===================                                                   |  27%
+  |                                                                            
+  |===================                                                   |  28%
+  |                                                                            
+  |====================                                                  |  28%
+  |                                                                            
+  |====================                                                  |  29%
+  |                                                                            
+  |=====================                                                 |  29%
+  |                                                                            
+  |=====================                                                 |  30%
+  |                                                                            
+  |=====================                                                 |  31%
+  |                                                                            
+  |======================                                                |  31%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |=======================                                               |  32%
+  |                                                                            
+  |=======================                                               |  33%
+  |                                                                            
+  |=======================                                               |  34%
+  |                                                                            
+  |========================                                              |  34%
+  |                                                                            
+  |========================                                              |  35%
+  |                                                                            
+  |=========================                                             |  35%
+  |                                                                            
+  |=========================                                             |  36%
+  |                                                                            
+  |==========================                                            |  36%
+  |                                                                            
+  |==========================                                            |  37%
+  |                                                                            
+  |==========================                                            |  38%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |===========================                                           |  39%
+  |                                                                            
+  |============================                                          |  39%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |============================                                          |  41%
+  |                                                                            
+  |=============================                                         |  41%
+  |                                                                            
+  |=============================                                         |  42%
+  |                                                                            
+  |==============================                                        |  42%
+  |                                                                            
+  |==============================                                        |  43%
+  |                                                                            
+  |==============================                                        |  44%
+  |                                                                            
+  |===============================                                       |  44%
+  |                                                                            
+  |===============================                                       |  45%
+  |                                                                            
+  |================================                                      |  45%
+  |                                                                            
+  |================================                                      |  46%
+  |                                                                            
+  |=================================                                     |  46%
+  |                                                                            
+  |=================================                                     |  47%
+  |                                                                            
+  |=================================                                     |  48%
+  |                                                                            
+  |==================================                                    |  48%
+  |                                                                            
+  |==================================                                    |  49%
+  |                                                                            
+  |===================================                                   |  49%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |===================================                                   |  51%
+  |                                                                            
+  |====================================                                  |  51%
+  |                                                                            
+  |====================================                                  |  52%
+  |                                                                            
+  |=====================================                                 |  52%
+  |                                                                            
+  |=====================================                                 |  53%
+  |                                                                            
+  |=====================================                                 |  54%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |======================================                                |  55%
+  |                                                                            
+  |=======================================                               |  55%
+  |                                                                            
+  |=======================================                               |  56%
+  |                                                                            
+  |========================================                              |  56%
+  |                                                                            
+  |========================================                              |  57%
+  |                                                                            
+  |========================================                              |  58%
+  |                                                                            
+  |=========================================                             |  58%
+  |                                                                            
+  |=========================================                             |  59%
+  |                                                                            
+  |==========================================                            |  59%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |==========================================                            |  61%
+  |                                                                            
+  |===========================================                           |  61%
+  |                                                                            
+  |===========================================                           |  62%
+  |                                                                            
+  |============================================                          |  62%
+  |                                                                            
+  |============================================                          |  63%
+  |                                                                            
+  |============================================                          |  64%
+  |                                                                            
+  |=============================================                         |  64%
+  |                                                                            
+  |=============================================                         |  65%
+  |                                                                            
+  |==============================================                        |  65%
+  |                                                                            
+  |==============================================                        |  66%
+  |                                                                            
+  |===============================================                       |  66%
+  |                                                                            
+  |===============================================                       |  67%
+  |                                                                            
+  |===============================================                       |  68%
+  |                                                                            
+  |================================================                      |  68%
+  |                                                                            
+  |================================================                      |  69%
+  |                                                                            
+  |=================================================                     |  69%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |=================================================                     |  71%
+  |                                                                            
+  |==================================================                    |  71%
+  |                                                                            
+  |==================================================                    |  72%
+  |                                                                            
+  |===================================================                   |  72%
+  |                                                                            
+  |===================================================                   |  73%
+  |                                                                            
+  |===================================================                   |  74%
+  |                                                                            
+  |====================================================                  |  74%
+  |                                                                            
+  |====================================================                  |  75%
+  |                                                                            
+  |=====================================================                 |  75%
+  |                                                                            
+  |=====================================================                 |  76%
+  |                                                                            
+  |======================================================                |  76%
+  |                                                                            
+  |======================================================                |  77%
+  |                                                                            
+  |======================================================                |  78%
+  |                                                                            
+  |=======================================================               |  78%
+  |                                                                            
+  |=======================================================               |  79%
+  |                                                                            
+  |========================================================              |  79%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |========================================================              |  81%
+  |                                                                            
+  |=========================================================             |  81%
+  |                                                                            
+  |=========================================================             |  82%
+  |                                                                            
+  |==========================================================            |  82%
+  |                                                                            
+  |==========================================================            |  83%
+  |                                                                            
+  |==========================================================            |  84%
+  |                                                                            
+  |===========================================================           |  84%
+  |                                                                            
+  |===========================================================           |  85%
+  |                                                                            
+  |============================================================          |  85%
+  |                                                                            
+  |============================================================          |  86%
+  |                                                                            
+  |=============================================================         |  86%
+  |                                                                            
+  |=============================================================         |  87%
+  |                                                                            
+  |=============================================================         |  88%
+  |                                                                            
+  |==============================================================        |  88%
+  |                                                                            
+  |==============================================================        |  89%
+  |                                                                            
+  |===============================================================       |  89%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |===============================================================       |  91%
+  |                                                                            
+  |================================================================      |  91%
+  |                                                                            
+  |================================================================      |  92%
+  |                                                                            
+  |=================================================================     |  92%
+  |                                                                            
+  |=================================================================     |  93%
+  |                                                                            
+  |=================================================================     |  94%
+  |                                                                            
+  |==================================================================    |  94%
+  |                                                                            
+  |==================================================================    |  95%
+  |                                                                            
+  |===================================================================   |  95%
+  |                                                                            
+  |===================================================================   |  96%
+  |                                                                            
+  |====================================================================  |  96%
+  |                                                                            
+  |====================================================================  |  97%
+  |                                                                            
+  |====================================================================  |  98%
+  |                                                                            
+  |===================================================================== |  98%
+  |                                                                            
+  |===================================================================== |  99%
+  |                                                                            
+  |======================================================================|  99%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code>close(progress.bar)</code></pre>
+<pre class="r"><code>stopCluster(cl)
+
+message(&quot;Total time = &quot;, toReadableTime(as.numeric(Sys.time() - start_time, unit = &quot;secs&quot;)))</code></pre>
+<pre><code>## Total time = 18mn 32s</code></pre>
+<pre class="r"><code>message(length(funct_annotations), &quot; functional cells were found&quot;) # 19389 in final atlas # 19541 from my data</code></pre>
+<pre><code>## 18783 functional cells were found</code></pre>
 </div>
-<div id="exp-07---enriched" class="section level1">
-<h1>Exp 07 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 7325 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 7218 cells]</code></pre>
-</div>
-<div id="exp-08---enriched" class="section level1">
-<h1>Exp 08 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 6650 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 6376 cells]</code></pre>
-</div>
-<div id="exp-09---enriched" class="section level1">
-<h1>Exp 09 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4825 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4763 cells]</code></pre>
-</div>
-<div id="exp-10---enriched" class="section level1">
-<h1>Exp 10 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4199 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4058 cells]</code></pre>
-</div>
-<div id="exp-11---enriched" class="section level1">
-<h1>Exp 11 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 5112 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 5016 cells]</code></pre>
-</div>
-<div id="exp-12-13---enriched" class="section level1">
-<h1>Exp 12-13 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 13601 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 13401 cells]</code></pre>
+<div id="updating-the-seurat-object" class="section level1">
+<h1>Updating the Seurat object</h1>
+<pre class="r"><code>data.seurat$functional_cells &lt;- F
+data.seurat$functional_cells[funct_annotations] &lt;- T
+data.seurat$functional_cells[data.seurat$TF == &quot;MatureAdipo&quot;] &lt;- &quot;MatureAdipo&quot;
+data.seurat$functional_cells[data.seurat$TF %in% c(&quot;D0&quot;, &quot;D0_confluent&quot;)] &lt;- &quot;D0&quot;
+
+saveRDS(data.seurat, &quot;results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds&quot;)</code></pre>
 </div>
 
 

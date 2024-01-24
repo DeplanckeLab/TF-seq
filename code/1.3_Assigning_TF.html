@@ -12,7 +12,7 @@
 <meta name="author" content="Vincent Gardeux" />
 
 
-<title>1.3 Assigning TF to cell barcodes for scTF-seq data</title>
+<title>Filtering of TF-seq data</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1620,7 +1620,7 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">1.3 Assigning TF to cell barcodes for scTF-seq data</h1>
+<h1 class="title toc-ignore">Filtering of TF-seq data</h1>
 <h4 class="author">Vincent Gardeux</h4>
 <h4 class="date">2023/11/23</h4>
 
@@ -1633,6 +1633,7 @@ display: none;
 <pre class="r"><code>suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
 suppressPackageStartupMessages(library(SamSPECTRAL)) # For the kneepoint algorithm
+suppressPackageStartupMessages(library(scater)) # isOutlier function
 suppressPackageStartupMessages(library(Rfast)) # For colnth function
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
@@ -1642,6 +1643,8 @@ cat(bold(&quot;Seurat&quot;), &quot;version&quot;, as.character(packageVersion(&
 <pre><code>## data.table version 1.14.8</code></pre>
 <pre class="r"><code>cat(bold(&quot;SamSPECTRAL&quot;), &quot;version&quot;, as.character(packageVersion(&quot;SamSPECTRAL&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## SamSPECTRAL version 1.54.0</code></pre>
+<pre class="r"><code>cat(bold(&quot;scater&quot;), &quot;version&quot;, as.character(packageVersion(&quot;scater&quot;)), &quot;\n&quot;)</code></pre>
+<pre><code>## scater version 1.28.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;Rfast&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Rfast&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## Rfast version 2.0.8</code></pre>
 <pre class="r"><code>## Kneepoint filtering and TF assignment
@@ -1803,21 +1806,21 @@ filtering_kneepoint_combination &lt;- function(exp_cellranger, exp_tf_cell, exp_
 <div id="exp05---enriched" class="section level1">
 <h1>Exp05 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp05_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp05_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp05_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp05_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 5294 cell barcodes in cell ranger.</code></pre>
-<pre><code>## 46673 cell barcodes in TF/Cell</code></pre>
-<pre><code>## 3529 cell barcodes are overlapping.</code></pre>
-<pre><code>## 2839 cells are passing the kneepoint filtering</code></pre>
+<pre><code>## 46458 cell barcodes in TF/Cell</code></pre>
+<pre><code>## 3521 cell barcodes are overlapping.</code></pre>
+<pre><code>## 2834 cells are passing the kneepoint filtering</code></pre>
 </div>
 <div id="exp06---enriched" class="section level1">
 <h1>Exp06 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp06_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp06_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp06_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp06_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 6453 cell barcodes in cell ranger.</code></pre>
 <pre><code>## 49350 cell barcodes in TF/Cell</code></pre>
@@ -1827,9 +1830,9 @@ filtering_kneepoint_combination &lt;- function(exp_cellranger, exp_tf_cell, exp_
 <div id="exp07---enriched" class="section level1">
 <h1>Exp07 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp07_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp07_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp07_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp07_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 9607 cell barcodes in cell ranger.</code></pre>
 <pre><code>## 106070 cell barcodes in TF/Cell</code></pre>
@@ -1839,9 +1842,9 @@ filtering_kneepoint_combination &lt;- function(exp_cellranger, exp_tf_cell, exp_
 <div id="exp08---enriched" class="section level1">
 <h1>Exp08 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp08_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp08_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp08_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp08_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 8938 cell barcodes in cell ranger.</code></pre>
 <pre><code>## 114743 cell barcodes in TF/Cell</code></pre>
@@ -1851,38 +1854,38 @@ filtering_kneepoint_combination &lt;- function(exp_cellranger, exp_tf_cell, exp_
 <div id="exp09---enriched" class="section level1">
 <h1>Exp09 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp09_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp09_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp09_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp09_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 6832 cell barcodes in cell ranger.</code></pre>
-<pre><code>## 38621 cell barcodes in TF/Cell</code></pre>
-<pre><code>## 6146 cell barcodes are overlapping.</code></pre>
-<pre><code>## 4780 cells are passing the kneepoint filtering</code></pre>
+<pre><code>## 38942 cell barcodes in TF/Cell</code></pre>
+<pre><code>## 6132 cell barcodes are overlapping.</code></pre>
+<pre><code>## 4825 cells are passing the kneepoint filtering</code></pre>
 </div>
 <div id="exp10---enriched" class="section level1">
 <h1>Exp10 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp10_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp10_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp10_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp10_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 6863 cell barcodes in cell ranger.</code></pre>
-<pre><code>## 49761 cell barcodes in TF/Cell</code></pre>
-<pre><code>## 6498 cell barcodes are overlapping.</code></pre>
-<pre><code>## 4185 cells are passing the kneepoint filtering</code></pre>
+<pre><code>## 49759 cell barcodes in TF/Cell</code></pre>
+<pre><code>## 6495 cell barcodes are overlapping.</code></pre>
+<pre><code>## 4199 cells are passing the kneepoint filtering</code></pre>
 </div>
 <div id="exp11---enriched" class="section level1">
 <h1>Exp11 - Enriched</h1>
 <pre class="r"><code>filtering_kneepoint(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp11_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp11_enriched.read_matrix.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds&quot;
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp11_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp11_enriched.read_matrix.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds&quot;
 )</code></pre>
 <pre><code>## 8044 cell barcodes in cell ranger.</code></pre>
-<pre><code>## 65210 cell barcodes in TF/Cell</code></pre>
-<pre><code>## 7361 cell barcodes are overlapping.</code></pre>
-<pre><code>## 5133 cells are passing the kneepoint filtering</code></pre>
+<pre><code>## 65097 cell barcodes in TF/Cell</code></pre>
+<pre><code>## 7360 cell barcodes are overlapping.</code></pre>
+<pre><code>## 5112 cells are passing the kneepoint filtering</code></pre>
 </div>
 <div id="exp12-13" class="section level1">
 <h1>Exp12-13</h1>
@@ -1895,39 +1898,66 @@ these cells.</p>
 <h1>First, let’s create the merged matrix:
 C3H10_10X_exp12-13_enriched.read_matrix.txt</h1>
 <pre class="r"><code># Reading exp12
-TF_EXP12 &lt;- fread(&quot;./results/C3H10_10X_exp12_enriched.read_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
+TF_EXP12 &lt;- fread(&quot;results/C3H10_10X_exp12_enriched.read_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
 # Adding back the &#39;-1&#39;, since some cell barcodes are the same between exp12 and exp13
 colnames(TF_EXP12)[3:ncol(TF_EXP12)] &lt;- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], &quot;-1&quot;)
 message(ncol(TF_EXP12) - 2, &quot; cells in exp12 TF matrix&quot;)</code></pre>
-<pre><code>## 89309 cells in exp12 TF matrix</code></pre>
+<pre><code>## 88939 cells in exp12 TF matrix</code></pre>
 <pre class="r"><code># Reading exp13
-TF_EXP13 &lt;- fread(&quot;./results/C3H10_10X_exp13_enriched.read_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
+TF_EXP13 &lt;- fread(&quot;results/C3H10_10X_exp13_enriched.read_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
 # Adding back the &#39;-2&#39;, since some cell barcodes are the same between exp12 and exp13
 colnames(TF_EXP13)[3:ncol(TF_EXP13)] &lt;- paste0(colnames(TF_EXP13)[3:ncol(TF_EXP13)], &quot;-2&quot;)
 message(ncol(TF_EXP13) - 2, &quot; cells in exp13 TF matrix&quot;)</code></pre>
-<pre><code>## 81094 cells in exp13 TF matrix</code></pre>
+<pre><code>## 80817 cells in exp13 TF matrix</code></pre>
 <pre class="r"><code># Merging
 #all(TF_EXP12$TFName == TF_EXP13$TFName) # TRUE
 #all(TF_EXP12$TFId == TF_EXP13$TFId) # TRUE
 TF_EXP12_13 &lt;- cbind(TF_EXP12, TF_EXP13[3:ncol(TF_EXP13)])
 
 # Writing
-fwrite(TF_EXP12_13, file = &quot;./results/C3H10_10X_exp12-13_enriched.read_matrix.txt&quot;, sep = &quot;\t&quot;, quote = F, row.names = F, col.names = T)
+fwrite(TF_EXP12_13, file = &quot;results/C3H10_10X_exp12-13_enriched.read_matrix.txt&quot;, sep = &quot;\t&quot;, quote = F, row.names = F, col.names = T)
 
 message(ncol(TF_EXP12_13) - 2, &quot; cells in merged TF matrix&quot;)</code></pre>
-<pre><code>## 170403 cells in merged TF matrix</code></pre>
+<pre><code>## 169756 cells in merged TF matrix</code></pre>
+<pre class="r"><code>rm(TF_EXP12, TF_EXP13, TF_EXP12_13)</code></pre>
+</div>
+<div id="lets-aso-create-the-merged-matrix-for-tf-vector-calculation-c3h10_10x_exp12-13_enriched.umi_matrix.txt" class="section level1">
+<h1>Let’s aso create the merged matrix (for TF vector calculation):
+C3H10_10X_exp12-13_enriched.umi_matrix.txt</h1>
+<pre class="r"><code># Reading exp12
+TF_EXP12 &lt;- fread(&quot;results/C3H10_10X_exp12_enriched.umi_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
+# Adding back the &#39;-1&#39;, since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP12)[3:ncol(TF_EXP12)] &lt;- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], &quot;-1&quot;)
+message(ncol(TF_EXP12) - 2, &quot; cells in exp12 TF matrix&quot;)</code></pre>
+<pre><code>## 88939 cells in exp12 TF matrix</code></pre>
+<pre class="r"><code># Reading exp13
+TF_EXP13 &lt;- fread(&quot;results/C3H10_10X_exp13_enriched.umi_matrix.txt&quot;, header = T, stringsAsFactors = F, data.table = F)
+# Adding back the &#39;-2&#39;, since some cell barcodes are the same between exp12 and exp13
+colnames(TF_EXP13)[3:ncol(TF_EXP13)] &lt;- paste0(colnames(TF_EXP13)[3:ncol(TF_EXP13)], &quot;-2&quot;)
+message(ncol(TF_EXP13) - 2, &quot; cells in exp13 TF matrix&quot;)</code></pre>
+<pre><code>## 80817 cells in exp13 TF matrix</code></pre>
+<pre class="r"><code># Merging
+#all(TF_EXP12$TFName == TF_EXP13$TFName) # TRUE
+#all(TF_EXP12$TFId == TF_EXP13$TFId) # TRUE
+TF_EXP12_13 &lt;- cbind(TF_EXP12, TF_EXP13[3:ncol(TF_EXP13)])
+
+# Writing
+fwrite(TF_EXP12_13, file = &quot;results/C3H10_10X_exp12-13_enriched.umi_matrix.txt&quot;, sep = &quot;\t&quot;, quote = F, row.names = F, col.names = T)
+
+message(ncol(TF_EXP12_13) - 2, &quot; cells in merged TF matrix&quot;)</code></pre>
+<pre><code>## 169756 cells in merged TF matrix</code></pre>
 <pre class="r"><code>rm(TF_EXP12, TF_EXP13, TF_EXP12_13)</code></pre>
 <div id="kneepoint-algo-for-exp12-13---enriched" class="section level2">
 <h2>Kneepoint algo for exp12-13 - enriched</h2>
 <pre class="r"><code>filtering_kneepoint_combination(
-  exp_cellranger = &quot;./cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5&quot;,
-  exp_tf_cell = &quot;./results/C3H10_10X_exp12-13_enriched.read_matrix.txt&quot;,
-  exp_combination_list = &quot;./metadata/C3H10_10X_Metadata_exp12-13_combination.txt&quot;,
-  exp_out_seurat = &quot;./results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds&quot;)</code></pre>
+  exp_cellranger = &quot;cellranger/C3H10_10X_exp12-13_filtered_feature_bc_matrix.h5&quot;,
+  exp_tf_cell = &quot;results/C3H10_10X_exp12-13_enriched.read_matrix.txt&quot;,
+  exp_combination_list = &quot;metadata/C3H10_10X_Metadata_exp12-13_combination.txt&quot;,
+  exp_out_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds&quot;)</code></pre>
 <pre><code>## 21471 cell barcodes in cell ranger.</code></pre>
-<pre><code>## 170403 cell barcodes in TF/Cell</code></pre>
-<pre><code>## 18857 cell barcodes are overlapping.</code></pre>
-<pre><code>## 13606 cells are passing the kneepoint filtering</code></pre>
+<pre><code>## 169756 cell barcodes in TF/Cell</code></pre>
+<pre><code>## 18752 cell barcodes are overlapping.</code></pre>
+<pre><code>## 13601 cells are passing the kneepoint filtering</code></pre>
 </div>
 </div>
 

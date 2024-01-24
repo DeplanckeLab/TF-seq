@@ -1,0 +1,349 @@
+---
+title: "1.5.2 D0 assignment, MatureAdipo calculation, and TF renaming"
+author: "Vincent Gardeux"
+date: "2023/12/19"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+```
+
+### Calculating MatureAdipo from D4-D5 adipo cells in all exps (except exp12-13?)
+
+This is currently not reproducible, so I just load the cell annotations from Pernille.
+
+```{r}
+## MATURE ADIPO (currently not reproducible)
+mature_adipo <- fread("~/SVRAW1/prainer/TFseq_ressourcePaper_03.2022/data/matureDcells_basedOnAdipoScore.csv", sep = "\t", data.table = F, header = T)
+mature_adipo <- subset(mature_adipo, mature)$cell_id
+message(length(mature_adipo), " MatureAdipo cells")
+```
+
+Creating a list of all exps
+```{r}
+## Full list
+data.seurat_all <- list()
+```
+
+#### Exp05
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3")
+d0_confluent <- c("mCherry-BC11", "mCherry-BC12")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "NeuroD2"] <- "Neurod2"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp05"]] <- data.seurat
+```
+
+#### Exp06
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3")
+d0_confluent <- c("mCherry-BC11", "mCherry-BC12")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "B230358A15Rik"] <- "Hsf3"
+data.seurat$TF[data.seurat$TF == "2810426N06Rik"] <- "Zfp788"
+data.seurat$TF[data.seurat$TF == "Tcfap4"] <- "Tfap4"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp06"]] <- data.seurat
+```
+
+#### Exp07
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3")
+d0_confluent <- c("mCherry-BC17", "mCherry-BC22")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "myoD"] <- "Myod1"
+data.seurat$TF[data.seurat$TF == "Gm239"] <- "Myrfl"
+data.seurat$TF[data.seurat$TF == "Fkhl18"] <- "Foxs1"
+data.seurat$TF[data.seurat$TF == "Bhlhb4"] <- "Bhlhe23"
+data.seurat$TF[data.seurat$TF == "Tgif2lx"] <- "Tgif2lx1"
+data.seurat$TF[data.seurat$TF == "EG194588"] <- "Obox7"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp07"]] <- data.seurat
+```
+
+#### Exp08
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3")
+d0_confluent <- c("mCherry-BC17", "mCherry-BC22")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "Bhlhb2"] <- "Bhlhe40"
+data.seurat$TF[data.seurat$TF == "C330016O10Rik"] <- "N4bp3"
+data.seurat$TF[data.seurat$TF == "1700029I01Rik"] <- "Zfp991"
+data.seurat$TF[data.seurat$TF == "8430426H19Rik"] <- "Zfp935"
+data.seurat$TF[data.seurat$TF == "Zfp191"] <- "Zfp24"
+data.seurat$TF[data.seurat$TF == "6430604K15Rik"] <- "Zfp747"
+data.seurat$TF[data.seurat$TF == "BC050078"] <- "Zfp867"
+data.seurat$TF[data.seurat$TF == "1700065O13Rik"] <- "Zfp763"
+data.seurat$TF[data.seurat$TF == "Duxbl"] <- "Duxbl1"
+data.seurat$TF[data.seurat$TF == "myoD"] <- "Myod1"
+data.seurat$TF[data.seurat$TF == "Zfp192"] <- "Zkscan8"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp08"]] <- data.seurat
+```
+
+#### Exp09
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC21", "mCherry-BC22")
+d0_confluent <- c("mCherry-P5A8", "mCherry-P5A10", "mCherry-P5A11", "mCherry-P5B12")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "Pparg1_1"] <- "Pparg1"
+data.seurat$TF[data.seurat$TF == "Pparg1_2"] <- "Pparg1"
+data.seurat$TF[data.seurat$TF == "Tcfap2c"] <- "Tfap2c"
+data.seurat$TF[data.seurat$TF == "Tcfec"] <- "Tfec"
+data.seurat$TF[data.seurat$TF == "Tcfeb"] <- "Tfeb"
+data.seurat$TF[data.seurat$TF == "Tref1"] <- "Trerf1"
+data.seurat$TF[data.seurat$TF == "Hoxd10_1"] <- "Hoxd10"
+data.seurat$TF[data.seurat$TF == "Hoxd10_2"] <- "Hoxd10"
+data.seurat$TF[data.seurat$TF == "Tcfap2b"] <- "Tfap2b"
+data.seurat$TF[data.seurat$TF == "MyoD"] <- "Myod1"
+data.seurat$TF[data.seurat$TF == "Bhlhb2"] <- "Bhlhe40"
+data.seurat$TF[data.seurat$TF == "Tada2l"] <- "Tada2a"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp09"]] <- data.seurat
+```
+
+#### Exp10
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3", "mCherry-BC6")
+d0_confluent <- c("mCherry-P5A5", "mCherry-P5A8", "mCherry-P5A10")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "Gm1008"] <- "Zfp663"
+data.seurat$TF[data.seurat$TF == "Zfp187"] <- "Zscan26"
+data.seurat$TF[data.seurat$TF == "Zfp422-rs1"] <- "Zfp955a"
+data.seurat$TF[data.seurat$TF == "Zfp85-rs1"] <- "Zfp85"
+data.seurat$TF[data.seurat$TF == "Zfp238"] <- "Zbtb18"
+data.seurat$TF[data.seurat$TF == "AI894139"] <- "Zfp956"
+data.seurat$TF[data.seurat$TF == "Bhlhb2"] <- "Bhlhe40"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp10"]] <- data.seurat
+```
+
+#### Exp11
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC1", "mCherry-BC3", "mCherry-BC6")
+d0_confluent <- c()
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo"
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry-")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "Hmgb2l1"] <- "Hmgxb4"
+data.seurat$TF[data.seurat$TF == "Sox2_1"] <- "Sox2"
+data.seurat$TF[data.seurat$TF == "Sox2_2"] <- "Sox2"
+data.seurat$TF[data.seurat$TF == "Fam164a"] <- "Zc2hc1a"
+data.seurat$TF[data.seurat$TF == "CEBPA"] <- "Cebpa"
+data.seurat$TF[data.seurat$TF == "MESP1"] <- "Mesp1"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp11"]] <- data.seurat
+```
+
+#### Exp12-13
+```{r}
+# D0 metadata
+d0 <- c("mCherry_BC17")
+d0_confluent <- c("mCherry_BC15")
+# We filter out mCherry_BC14, which had weird location
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] <- "MatureAdipo" # We don't do that here actually
+
+# Filtering the Seurat object
+data.seurat <- data.seurat[,!startsWith(data.seurat$TF, "mCherry_")]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == "Cebpa_1"] <- "Cebpa"
+data.seurat$TF[data.seurat$TF == "Cebpa_2"] <- "Cebpa"
+data.seurat$TF[data.seurat$TF == "Cebpa_4"] <- "Cebpa"
+data.seurat$TF[data.seurat$TF == "Mycn_1"] <- "Mycn"
+data.seurat$TF[data.seurat$TF == "Mycn_2"] <- "Mycn"
+data.seurat$TF[data.seurat$TF == "Mycn_3"] <- "Mycn"
+data.seurat$TF[data.seurat$TF == "Mycn_4"] <- "Mycn"
+data.seurat$TF[data.seurat$TF == "Myog_BC1"] <- "Mature_myo"
+data.seurat$TF[data.seurat$TF == "Myog_BC2"] <- "Mature_myo"
+data.seurat$TF[data.seurat$TF == "Myog_BC3"] <- "Mature_myo"
+data.seurat$TF[data.seurat$TF == "Myog_BC4"] <- "Mature_myo"
+data.seurat$TF[data.seurat$TF == "Myog_BC5"] <- "Mature_myo"
+data.seurat$TF[data.seurat$TF == "Myog_BC7"] <- "Myog"
+data.seurat$TF[data.seurat$TF == "Myog_BC8"] <- "Myog"
+data.seurat$TF[data.seurat$TF == "Myog_BC9"] <- "Myog"
+data.seurat$TF[data.seurat$TF == "Pparg_A6"] <- "Pparg"
+data.seurat$TF[data.seurat$TF == "Pparg_G6"] <- "Pparg"
+data.seurat$TF[data.seurat$TF == "Runx2_5"] <- "Runx2"
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp12-13"]] <- data.seurat
+```
+
+```{r}
+saveRDS(data.seurat_all, "results/C3H10_10X_all_exps_merged.rds")
+```
+

@@ -12,7 +12,7 @@
 <meta name="author" content="Vincent Gardeux" />
 
 
-<title>1.4 Filtering outlier cells of TF-seq data</title>
+<title>1.5.2 D0 assignment, MatureAdipo calculation, and TF renaming</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1620,10 +1620,10 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">1.4 Filtering outlier cells of TF-seq
-data</h1>
+<h1 class="title toc-ignore">1.5.2 D0 assignment, MatureAdipo
+calculation, and TF renaming</h1>
 <h4 class="author">Vincent Gardeux</h4>
-<h4 class="date">2023/12/14</h4>
+<h4 class="date">2023/12/19</h4>
 
 </div>
 
@@ -1633,98 +1633,326 @@ data</h1>
 <p>First, I’m loading the required libraries &amp; functions</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
-suppressPackageStartupMessages(library(scater)) # isOutlier function
 suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
 
 cat(bold(&quot;Seurat&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Seurat&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## Seurat version 4.4.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;data.table&quot;), &quot;version&quot;, as.character(packageVersion(&quot;data.table&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## data.table version 1.14.8</code></pre>
-<pre class="r"><code>cat(bold(&quot;scater&quot;), &quot;version&quot;, as.character(packageVersion(&quot;scater&quot;)), &quot;\n&quot;)</code></pre>
-<pre><code>## scater version 1.28.0</code></pre>
-<pre class="r"><code>cat(bold(&quot;Rfast&quot;), &quot;version&quot;, as.character(packageVersion(&quot;Rfast&quot;)), &quot;\n&quot;)</code></pre>
-<pre><code>## Rfast version 2.0.8</code></pre>
-<pre class="r"><code>filtering_outlierCells &lt;- function(exp_seurat, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40,  min_pc_protCod = 75, exp_out_seurat){
-  data.seurat &lt;- readRDS(exp_seurat)
-  message(&quot;Cell ranger object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
-  
-  ### ---Features and Library size
-  libsize.drop &lt;- isOutlier(data.seurat$nCount_RNA, nmads=libsize_nmads, type=&quot;lower&quot;, log=TRUE) # nCount_RNA == colSums(data.seurat)
-  features.drop &lt;- isOutlier(data.seurat$nFeature_RNA, nmads=features_nmads, type=&quot;lower&quot;, log=TRUE) # nFeature_RNA == as.vector(colSums(data.seurat &gt; 0))
-  
-  ### --- Gene annotation
-  data.gene_annot &lt;- fread(&quot;metadata/GRCm38_gene_annot.tsv&quot;, data.table = F)
-  
-  ### --- Mitochondrial
-  mito.genes &lt;- subset(data.gene_annot, is_mitochondrial)$ensembl_id
-  mito.genes &lt;- mito.genes[mito.genes %in% rownames(data.seurat)]
-  data.seurat$percent.mito &lt;- data.seurat[mito.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  ### --- Ribosomal
-  ribo.genes &lt;- subset(data.gene_annot, is_ribosomal)$ensembl_id
-  ribo.genes &lt;- ribo.genes[ribo.genes %in% rownames(data.seurat)]
-  data.seurat$percent.rRNA &lt;- data.seurat[ribo.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  ### --- Protein Coding
-  protCod.genes &lt;- subset(data.gene_annot, biotype == &quot;protein_coding&quot;)$ensembl_id
-  protCod.genes &lt;- protCod.genes[protCod.genes %in% rownames(data.seurat)]
-  data.seurat$percent.ProtCod &lt;- data.seurat[protCod.genes, ]$nCount_RNA/data.seurat$nCount_RNA*100
-  
-  # Filtering
-  data.seurat &lt;- data.seurat[,features.drop &lt; 1 &amp; libsize.drop &lt; 1 &amp; data.seurat$percent.mito &lt; max_pc_mito &amp; data.seurat$percent.rRNA &lt; max_pc_rRNA &amp; data.seurat$percent.ProtCod &gt; min_pc_protCod]
-  message(&quot;Filtered object dimensions = [&quot;, nrow(data.seurat), &quot; genes x &quot;, ncol(data.seurat), &quot; cells]&quot;)
-  saveRDS(data.seurat, file = exp_out_seurat)
-}</code></pre>
-<p>Now, filtering each experiment, with specific parameters, and
-generating the Seurat object.</p>
+<div id="calculating-matureadipo-from-d4-d5-adipo-cells-in-all-exps-except-exp12-13" class="section level3">
+<h3>Calculating MatureAdipo from D4-D5 adipo cells in all exps (except
+exp12-13?)</h3>
+<p>This is currently not reproducible, so I just load the cell
+annotations from Pernille.</p>
+<pre class="r"><code>## MATURE ADIPO (currently not reproducible)
+mature_adipo &lt;- fread(&quot;~/SVRAW1/prainer/TFseq_ressourcePaper_03.2022/data/matureDcells_basedOnAdipoScore.csv&quot;, sep = &quot;\t&quot;, data.table = F, header = T)
+mature_adipo &lt;- subset(mature_adipo, mature)$cell_id
+message(length(mature_adipo), &quot; MatureAdipo cells&quot;)</code></pre>
+<pre><code>## 544 MatureAdipo cells</code></pre>
+<p>Creating a list of all exps</p>
+<pre class="r"><code>## Full list
+data.seurat_all &lt;- list()</code></pre>
+<div id="exp05" class="section level4">
+<h4>Exp05</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;)
+d0_confluent &lt;- c(&quot;mCherry-BC11&quot;, &quot;mCherry-BC12&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;NeuroD2&quot;] &lt;- &quot;Neurod2&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 0 TF cells with less than 8 cells / TF: []</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp05&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-05---enriched" class="section level1">
-<h1>Exp 05 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 2834 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2789 cells]</code></pre>
+<div id="exp06" class="section level4">
+<h4>Exp06</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;)
+d0_confluent &lt;- c(&quot;mCherry-BC11&quot;, &quot;mCherry-BC12&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;B230358A15Rik&quot;] &lt;- &quot;Hsf3&quot;
+data.seurat$TF[data.seurat$TF == &quot;2810426N06Rik&quot;] &lt;- &quot;Zfp788&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tcfap4&quot;] &lt;- &quot;Tfap4&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 0 TF cells with less than 8 cells / TF: []</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp06&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-06---enriched" class="section level1">
-<h1>Exp 06 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 4, features_nmads = 4, max_pc_mito = 10, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 3033 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 2985 cells]</code></pre>
+<div id="exp07" class="section level4">
+<h4>Exp07</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;)
+d0_confluent &lt;- c(&quot;mCherry-BC17&quot;, &quot;mCherry-BC22&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;myoD&quot;] &lt;- &quot;Myod1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Gm239&quot;] &lt;- &quot;Myrfl&quot;
+data.seurat$TF[data.seurat$TF == &quot;Fkhl18&quot;] &lt;- &quot;Foxs1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Bhlhb4&quot;] &lt;- &quot;Bhlhe23&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tgif2lx&quot;] &lt;- &quot;Tgif2lx1&quot;
+data.seurat$TF[data.seurat$TF == &quot;EG194588&quot;] &lt;- &quot;Obox7&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 0 TF cells with less than 8 cells / TF: []</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp07&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-07---enriched" class="section level1">
-<h1>Exp 07 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 25, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 7325 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 7218 cells]</code></pre>
+<div id="exp08" class="section level4">
+<h4>Exp08</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;)
+d0_confluent &lt;- c(&quot;mCherry-BC17&quot;, &quot;mCherry-BC22&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;Bhlhb2&quot;] &lt;- &quot;Bhlhe40&quot;
+data.seurat$TF[data.seurat$TF == &quot;C330016O10Rik&quot;] &lt;- &quot;N4bp3&quot;
+data.seurat$TF[data.seurat$TF == &quot;1700029I01Rik&quot;] &lt;- &quot;Zfp991&quot;
+data.seurat$TF[data.seurat$TF == &quot;8430426H19Rik&quot;] &lt;- &quot;Zfp935&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp191&quot;] &lt;- &quot;Zfp24&quot;
+data.seurat$TF[data.seurat$TF == &quot;6430604K15Rik&quot;] &lt;- &quot;Zfp747&quot;
+data.seurat$TF[data.seurat$TF == &quot;BC050078&quot;] &lt;- &quot;Zfp867&quot;
+data.seurat$TF[data.seurat$TF == &quot;1700065O13Rik&quot;] &lt;- &quot;Zfp763&quot;
+data.seurat$TF[data.seurat$TF == &quot;Duxbl&quot;] &lt;- &quot;Duxbl1&quot;
+data.seurat$TF[data.seurat$TF == &quot;myoD&quot;] &lt;- &quot;Myod1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp192&quot;] &lt;- &quot;Zkscan8&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 0 TF cells with less than 8 cells / TF: []</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp08&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-08---enriched" class="section level1">
-<h1>Exp 08 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 6650 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 6376 cells]</code></pre>
+<div id="exp09" class="section level4">
+<h4>Exp09</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC21&quot;, &quot;mCherry-BC22&quot;)
+d0_confluent &lt;- c(&quot;mCherry-P5A8&quot;, &quot;mCherry-P5A10&quot;, &quot;mCherry-P5A11&quot;, &quot;mCherry-P5B12&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;Pparg1_1&quot;] &lt;- &quot;Pparg1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Pparg1_2&quot;] &lt;- &quot;Pparg1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tcfap2c&quot;] &lt;- &quot;Tfap2c&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tcfec&quot;] &lt;- &quot;Tfec&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tcfeb&quot;] &lt;- &quot;Tfeb&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tref1&quot;] &lt;- &quot;Trerf1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Hoxd10_1&quot;] &lt;- &quot;Hoxd10&quot;
+data.seurat$TF[data.seurat$TF == &quot;Hoxd10_2&quot;] &lt;- &quot;Hoxd10&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tcfap2b&quot;] &lt;- &quot;Tfap2b&quot;
+data.seurat$TF[data.seurat$TF == &quot;MyoD&quot;] &lt;- &quot;Myod1&quot;
+data.seurat$TF[data.seurat$TF == &quot;Bhlhb2&quot;] &lt;- &quot;Bhlhe40&quot;
+data.seurat$TF[data.seurat$TF == &quot;Tada2l&quot;] &lt;- &quot;Tada2a&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 0 TF cells with less than 8 cells / TF: []</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp09&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-09---enriched" class="section level1">
-<h1>Exp 09 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 35, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4825 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4763 cells]</code></pre>
+<div id="exp10" class="section level4">
+<h4>Exp10</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;, &quot;mCherry-BC6&quot;)
+d0_confluent &lt;- c(&quot;mCherry-P5A5&quot;, &quot;mCherry-P5A8&quot;, &quot;mCherry-P5A10&quot;)
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;Gm1008&quot;] &lt;- &quot;Zfp663&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp187&quot;] &lt;- &quot;Zscan26&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp422-rs1&quot;] &lt;- &quot;Zfp955a&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp85-rs1&quot;] &lt;- &quot;Zfp85&quot;
+data.seurat$TF[data.seurat$TF == &quot;Zfp238&quot;] &lt;- &quot;Zbtb18&quot;
+data.seurat$TF[data.seurat$TF == &quot;AI894139&quot;] &lt;- &quot;Zfp956&quot;
+data.seurat$TF[data.seurat$TF == &quot;Bhlhb2&quot;] &lt;- &quot;Bhlhe40&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 13 TF cells with less than 8 cells / TF: [BC049807, Jarid1d, Zfp260]</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp10&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-10---enriched" class="section level1">
-<h1>Exp 10 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 4199 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 4058 cells]</code></pre>
+<div id="exp11" class="section level4">
+<h4>Exp11</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry-BC1&quot;, &quot;mCherry-BC3&quot;, &quot;mCherry-BC6&quot;)
+d0_confluent &lt;- c()
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;Hmgb2l1&quot;] &lt;- &quot;Hmgxb4&quot;
+data.seurat$TF[data.seurat$TF == &quot;Sox2_1&quot;] &lt;- &quot;Sox2&quot;
+data.seurat$TF[data.seurat$TF == &quot;Sox2_2&quot;] &lt;- &quot;Sox2&quot;
+data.seurat$TF[data.seurat$TF == &quot;Fam164a&quot;] &lt;- &quot;Zc2hc1a&quot;
+data.seurat$TF[data.seurat$TF == &quot;CEBPA&quot;] &lt;- &quot;Cebpa&quot;
+data.seurat$TF[data.seurat$TF == &quot;MESP1&quot;] &lt;- &quot;Mesp1&quot;
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs &lt;- names(table(data.seurat$TF))[table(data.seurat$TF) &lt; 8]
+message(&quot;Removing &quot;,sum(data.seurat$TF %in% removed_tfs), &quot; TF cells with less than 8 cells / TF: &quot;, paste0(&quot;[&quot;, paste0(removed_tfs, collapse = &quot;, &quot;), &quot;]&quot;))</code></pre>
+<pre><code>## Removing 10 TF cells with less than 8 cells / TF: [Ppp1r10, Zc3hav1_1]</code></pre>
+<pre class="r"><code>data.seurat &lt;- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp11&quot;]] &lt;- data.seurat</code></pre>
 </div>
-<div id="exp-11---enriched" class="section level1">
-<h1>Exp 11 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 5112 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 5016 cells]</code></pre>
+<div id="exp12-13" class="section level4">
+<h4>Exp12-13</h4>
+<pre class="r"><code># D0 metadata
+d0 &lt;- c(&quot;mCherry_BC17&quot;)
+d0_confluent &lt;- c(&quot;mCherry_BC15&quot;)
+# We filter out mCherry_BC14, which had weird location
+
+# Reading file
+data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds&quot;)
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
+data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
+
+# Assigning Mature Adipo cells
+data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot; # We don&#39;t do that here actually
+
+# Filtering the Seurat object
+data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry_&quot;)]
+
+# Renaming deprecated TF names
+data.seurat$TF[data.seurat$TF == &quot;Cebpa_1&quot;] &lt;- &quot;Cebpa&quot;
+data.seurat$TF[data.seurat$TF == &quot;Cebpa_2&quot;] &lt;- &quot;Cebpa&quot;
+data.seurat$TF[data.seurat$TF == &quot;Cebpa_4&quot;] &lt;- &quot;Cebpa&quot;
+data.seurat$TF[data.seurat$TF == &quot;Mycn_1&quot;] &lt;- &quot;Mycn&quot;
+data.seurat$TF[data.seurat$TF == &quot;Mycn_2&quot;] &lt;- &quot;Mycn&quot;
+data.seurat$TF[data.seurat$TF == &quot;Mycn_3&quot;] &lt;- &quot;Mycn&quot;
+data.seurat$TF[data.seurat$TF == &quot;Mycn_4&quot;] &lt;- &quot;Mycn&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC1&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC2&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC3&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC4&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC5&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC7&quot;] &lt;- &quot;Myog&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC8&quot;] &lt;- &quot;Myog&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC9&quot;] &lt;- &quot;Myog&quot;
+data.seurat$TF[data.seurat$TF == &quot;Pparg_A6&quot;] &lt;- &quot;Pparg&quot;
+data.seurat$TF[data.seurat$TF == &quot;Pparg_G6&quot;] &lt;- &quot;Pparg&quot;
+data.seurat$TF[data.seurat$TF == &quot;Runx2_5&quot;] &lt;- &quot;Runx2&quot;
+
+# Putting Seurat object in the merged list
+data.seurat_all[[&quot;exp12-13&quot;]] &lt;- data.seurat</code></pre>
+<pre class="r"><code>saveRDS(data.seurat_all, &quot;results/C3H10_10X_all_exps_merged.rds&quot;)</code></pre>
 </div>
-<div id="exp-12-13---enriched" class="section level1">
-<h1>Exp 12-13 - enriched</h1>
-<pre class="r"><code>filtering_outlierCells(exp_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds&quot;, libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = &quot;results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds&quot;)</code></pre>
-<pre><code>## Cell ranger object dimensions = [55537 genes x 13601 cells]</code></pre>
-<pre><code>## Filtered object dimensions = [55537 genes x 13401 cells]</code></pre>
+</div>
 </div>
 
 
