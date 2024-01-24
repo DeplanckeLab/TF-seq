@@ -12,7 +12,7 @@
 <meta name="author" content="Vincent Gardeux" />
 
 
-<title>1.5.2 D0 assignment, MatureAdipo calculation, and TF renaming</title>
+<title>1.5.2 D0 assignment, Adipo_ref &amp; Myo_ref calculation, and TF renaming</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1620,8 +1620,8 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">1.5.2 D0 assignment, MatureAdipo
-calculation, and TF renaming</h1>
+<h1 class="title toc-ignore">1.5.2 D0 assignment, Adipo_ref &amp;
+Myo_ref calculation, and TF renaming</h1>
 <h4 class="author">Vincent Gardeux</h4>
 <h4 class="date">2023/12/19</h4>
 
@@ -1639,16 +1639,15 @@ cat(bold(&quot;Seurat&quot;), &quot;version&quot;, as.character(packageVersion(&
 <pre><code>## Seurat version 4.4.0</code></pre>
 <pre class="r"><code>cat(bold(&quot;data.table&quot;), &quot;version&quot;, as.character(packageVersion(&quot;data.table&quot;)), &quot;\n&quot;)</code></pre>
 <pre><code>## data.table version 1.14.8</code></pre>
-<div id="calculating-matureadipo-from-d4-d5-adipo-cells-in-all-exps-except-exp12-13" class="section level3">
-<h3>Calculating MatureAdipo from D4-D5 adipo cells in all exps (except
-exp12-13?)</h3>
-<p>This is currently not reproducible, so I just load the cell
-annotations from Pernille.</p>
-<pre class="r"><code>## MATURE ADIPO (currently not reproducible)
-mature_adipo &lt;- fread(&quot;~/SVRAW1/prainer/TFseq_ressourcePaper_03.2022/data/matureDcells_basedOnAdipoScore.csv&quot;, sep = &quot;\t&quot;, data.table = F, header = T)
-mature_adipo &lt;- subset(mature_adipo, mature)$cell_id
-message(length(mature_adipo), &quot; MatureAdipo cells&quot;)</code></pre>
-<pre><code>## 544 MatureAdipo cells</code></pre>
+<div id="calculating-adipo_ref-from-d4-d5-adipo-cells-in-all-exps-except-exp12-13" class="section level3">
+<h3>Calculating Adipo_ref from D4-D5 adipo cells in all exps (except
+exp12-13)</h3>
+<p>Calculation was done outside of this script, I just load the
+cells</p>
+<pre class="r"><code># Adipo_ref
+adipo_ref &lt;- fread(&quot;metadata/Adipo_ref_cells.txt&quot;, data.table = F, header = F)$V1
+message(length(adipo_ref), &quot; Adipo_ref cells&quot;)</code></pre>
+<pre><code>## 544 Adipo_ref cells</code></pre>
 <p>Creating a list of all exps</p>
 <pre class="r"><code>## Full list
 data.seurat_all &lt;- list()</code></pre>
@@ -1665,8 +1664,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp05_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1696,8 +1695,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp06_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1729,8 +1728,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp07_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1765,8 +1764,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp08_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1806,8 +1805,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp09_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1848,8 +1847,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp10_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1885,8 +1884,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp11_enriched.cellranger_knee
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot;
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot;
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry-&quot;)]
@@ -1922,8 +1921,8 @@ data.seurat &lt;- readRDS(&quot;results/C3H10_10X_exp12-13_enriched.cellranger_k
 data.seurat$TF[data.seurat$TF %in% d0] &lt;- &quot;D0&quot;
 data.seurat$TF[data.seurat$TF %in% d0_confluent] &lt;- &quot;D0_confluent&quot;
 
-# Assigning Mature Adipo cells
-data.seurat$TF[colnames(data.seurat) %in% mature_adipo] &lt;- &quot;MatureAdipo&quot; # We don&#39;t do that here actually
+# Assigning Adipo_ref cells
+data.seurat$TF[colnames(data.seurat) %in% adipo_ref] &lt;- &quot;Adipo_ref&quot; # There are no exp12-13 cells that we keep as Adipo_ref
 
 # Filtering the Seurat object
 data.seurat &lt;- data.seurat[,!startsWith(data.seurat$TF, &quot;mCherry_&quot;)]
@@ -1936,11 +1935,11 @@ data.seurat$TF[data.seurat$TF == &quot;Mycn_1&quot;] &lt;- &quot;Mycn&quot;
 data.seurat$TF[data.seurat$TF == &quot;Mycn_2&quot;] &lt;- &quot;Mycn&quot;
 data.seurat$TF[data.seurat$TF == &quot;Mycn_3&quot;] &lt;- &quot;Mycn&quot;
 data.seurat$TF[data.seurat$TF == &quot;Mycn_4&quot;] &lt;- &quot;Mycn&quot;
-data.seurat$TF[data.seurat$TF == &quot;Myog_BC1&quot;] &lt;- &quot;Mature_myo&quot;
-data.seurat$TF[data.seurat$TF == &quot;Myog_BC2&quot;] &lt;- &quot;Mature_myo&quot;
-data.seurat$TF[data.seurat$TF == &quot;Myog_BC3&quot;] &lt;- &quot;Mature_myo&quot;
-data.seurat$TF[data.seurat$TF == &quot;Myog_BC4&quot;] &lt;- &quot;Mature_myo&quot;
-data.seurat$TF[data.seurat$TF == &quot;Myog_BC5&quot;] &lt;- &quot;Mature_myo&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC1&quot;] &lt;- &quot;Myo_ref&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC2&quot;] &lt;- &quot;Myo_ref&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC3&quot;] &lt;- &quot;Myo_ref&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC4&quot;] &lt;- &quot;Myo_ref&quot;
+data.seurat$TF[data.seurat$TF == &quot;Myog_BC5&quot;] &lt;- &quot;Myo_ref&quot;
 data.seurat$TF[data.seurat$TF == &quot;Myog_BC7&quot;] &lt;- &quot;Myog&quot;
 data.seurat$TF[data.seurat$TF == &quot;Myog_BC8&quot;] &lt;- &quot;Myog&quot;
 data.seurat$TF[data.seurat$TF == &quot;Myog_BC9&quot;] &lt;- &quot;Myog&quot;

@@ -272,7 +272,7 @@ cell_cycle <- function(exp_seurat, exp_tf_cell){
 }
 ```
 
-#### 1.5.2 D0 assignment, Adipo_ref & Myo_ref assignment, and TF renaming <sub>(see full code here: [[Rmd](code/1.5.2_D0_MatureAdipo_TF_renaming.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.5.2_D0_MatureAdipo_TF_renaming.html)])</sub>
+#### 1.5.2 D0 assignment, Adipo_ref & Myo_ref assignment, and TF renaming <sub>(see full code here: [[Rmd](code/1.5.2_D0_Ref_TF_renaming.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.5.2_D0_Ref_TF_renaming.html)])</sub>
 
 For the final released dataset, we kept only TFs with more than 8 cells, and we assigned the internal "mCherry-BCXX" TF barcodes to their corresponding lineage and timepoints (see the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file). Then we kept only the D0 cells (non-differentiated MSCs) as control cells and reference adipocyte (Adipo_ref) and myocyte (Myo_ref) cells.<br/>
 

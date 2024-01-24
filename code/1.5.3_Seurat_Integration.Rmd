@@ -50,7 +50,7 @@ data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
 
 # Dimensions
 DefaultAssay(data.seurat_integrated) <- "RNA"
-dim(data.seurat_integrated) # 55536 39063
+dim(data.seurat_integrated)
 
 # Run the default Seurat pipeline on the integrated object
 data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
