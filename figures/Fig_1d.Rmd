@@ -1,0 +1,72 @@
+---
+title: "Figure 1d - Reproducibility script"
+author: "Wangjie Liu / Vincent Gardeux"
+date: "2024/01/24"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/data/gardeux/TF-seq_proper/")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(ggplot2)) # For plotting
+suppressPackageStartupMessages(library(readxl)) # For reading Excel files
+suppressPackageStartupMessages(library(plyr)) # For summary function
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("ggplot2"), "version", as.character(packageVersion("ggplot2")), "\n")
+cat(bold("readxl"), "version", as.character(packageVersion("readxl")), "\n")
+cat(bold("plyr"), "version", as.character(packageVersion("plyr")), "\n")
+
+# color scheme
+cols <- c("#8DA0CB", "#E78AC3", "#A6D854","#FFD92F","#E5C494", "#66C2A5", "#FC8D62", "#FFCCCC")
+names(cols) <- c("exp05", "exp06", "exp07", "exp08", "exp09", "exp10", "exp11", "exp12-13")
+
+# Summary function to compute mean and sd
+summary_func <- function(x, col){
+  c(mean = mean(x[[col]], na.rm=TRUE),
+    sd = sd(x[[col]], na.rm=TRUE))
+}
+```
+
+# First, I'll read the metadata file
+
+```{r}
+# Reading data
+plot_data <- as.data.frame(read_excel("metadata/TFseq_assignment_allExp.xlsx", sheet = 1, .name_repair = "unique_quiet"))
+plot_data$Type[plot_data$Type == "enriched"] <- "Enrich."
+plot_data$Type <- factor(plot_data$Type, levels = c("10x", "Enrich."))
+plot_data <- subset(plot_data, Exp %in% names(cols)) # Removing exp12 and exp13 (only counting the merge)
+
+# The value we are interested in (percentage of overlap with 10x cellranger)
+colnames(plot_data)[colnames(plot_data) == "Cell-barcodes-matching-10x-cellranger-pc"] <- "value"
+
+# In 1 to 100
+plot_data$value <- plot_data$value * 100 # in %
+```
+
+```{r Fig_1d, fig.width = 2, fig.height = 4}
+sum <- ddply(plot_data, "Type", .fun=summary_func, "value")
+colnames(sum)[colnames(sum) == "mean"] <- "value"
+
+p <- ggplot(sum, aes(x=Type, y=value)) +
+  geom_bar(stat="identity", width = 0.8, fill = "white", color = "#808184", size = 1) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
+  geom_errorbar(aes(ymin=value-sd, ymax=value+sd), width=.2, position=position_dodge(.9)) + 
+  geom_jitter(data = plot_data, mapping = aes(x = Type, y = value, col = Exp), size = 2, position = position_jitter(seed = 42)) +
+  scale_color_manual(values = cols) + theme(legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.title.x = element_blank(), axis.ticks.x = element_blank(), axis.line.y = element_line(), axis.title.y = element_text(size=16, color = "black"), axis.text.y = element_text(size=14, color = "black"), axis.text.x = element_text(size=14, color = "black")) +
+  labs(y = "% of cells associated with TF-IDs")
+
+p
+
+ggsave(p, filename = "figures/Fig_1d.pdf", width = 2, height = 4)
+```
