@@ -366,5 +366,5 @@ find_functional_cells <- function(seurat.object, nPCs = 10, threshold = 0.8, thr
 ```
 
 ## 2. Manuscript Figures
-### Figure 1 A
-TODO
+
+All manuscript figures are reproducible through scripts deposited [here](figures/)
