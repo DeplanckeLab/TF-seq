@@ -44,7 +44,7 @@ java -jar /software/TFseqTools-1.1.jar Counter --r1 TFEnrich_R1.fastq.gz --r2 TF
 ### 1.3. Robustly assigning each cell to a TF <sub>(see full code here: [[Rmd](code/1.3_Assigning_TF.Rmd)][[html](https://htmlpreview.github.io/?https://github.com/DeplanckeLab/TF-seq/blob/main/code/1.3_Assigning_TF.html)])</sub>
 At this point, we get 
 - a scRNA-seq count matrix from cellranger (**1.1**) with automated filtered cells based on cellranger cutoffs for detecting empty cells
-- a TF-Cell mapping matrix from TF-seq Tools (**1.2**) which detected TF barcodes and their corresponding cell barcodes (we used the read count matrix, not the UMI count matrix).
+- a TF-Cell mapping matrix (read count matrix or UMI count matrix) from TF-seq Tools (**1.2**) which detected TF barcodes and their corresponding cell barcodes. Although the read count matrix correlated well (Pearson's r = 0.9) with the UMI count matrix, the latter yielded ~40% less cells associated with TF-IDs. So we used the read count matrix not the UMI count matrix for **1.3** to keep more cells at this step. The UMI count matrix was used for calculating TF dose as described below (**1.5**)
 
 So now we take the overlapping cell barcodes between these two matrices, in order to build the final scRNA-seq object (both containing the scRNA-seq counts from 10x, and the TF assignment as a metadata).
 But we quickly realized that we needed an extra filtering step on this final TF-Cell mapping matrix, because even though most of cells were assigned a single TF barcode (as expected), some of them were aggregating reads from multiple TF barcodes (which should not happen). So we decided to clearly filter these latter out.
