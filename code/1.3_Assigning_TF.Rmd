@@ -290,7 +290,7 @@ message(ncol(TF_EXP12_13) - 2, " cells in merged TF matrix")
 rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
 ```
 
-# Let's aso create the merged matrix (for TF vector calculation): C3H10_10X_exp12-13_enriched.umi_matrix.txt
+# Let's also create the merged matrix (for TF vector calculation): C3H10_10X_exp12-13_enriched.umi_matrix.txt
 
 ```{r}
 # Reading exp12
