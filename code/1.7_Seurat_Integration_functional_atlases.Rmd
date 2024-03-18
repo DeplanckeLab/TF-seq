@@ -81,7 +81,7 @@ dim(data.seurat) # 55536 39063
 
 # Filtering the data and run seurat integration
 
-## option 1) Keeping functional, S+G2M at defalut phase, D0 and ref cells
+## option 1) Keeping functional, D0 and ref cells, and all S+G2M at defalut phase
 
 ```{r}
 # Keeping functional, cycling, D0 and ref cells
