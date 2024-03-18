@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/NAS2/TF-seq/Vincent/TF-seq_proper/")
+knitr::opts_knit$set(root.dir = "./")
 getwd()
 ```
 
