@@ -33,62 +33,11 @@ cat(bold("clustree"), "version", as.character(packageVersion("clustree")), "\n")
 set.seed(42)
 ```
 
-
-# First, I'll read the final atlas Seurat object
-```{r}
-data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
-dim(data.seurat) # 55536 39063
-```
-
-# Filtering the Seurat object (Keeping functional, S+G2M at defalut phase, D0 and ref cells)
+# Read the functional TF atlas with functional TF cells, all S+G2M (default phase), D0 and ref cells
 
 ```{r}
-# Keeping functional, cycling, D0 and ref cells
-data.seurat <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") | data.seurat$Phase %in% c("G2M", "S")]
-dim(data.seurat) # 55536 25801
-
-# remove TF cells with less than 5 cells per TF
-removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 5]
-message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 5 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
-data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
-```
-
-# Now performing the integration (~8mn for FindIntegrationAnchors) - by batch
-
-```{r}
-# Processing each batch separately
-
-data.seurat_all <- SplitObject(data.seurat, split.by = "batch")
-
-# First, Normalize and HVG on each Seurat object
-data.seurat_for_mnn <- list()
-for(exp in names(data.seurat_all)){
-  data.seurat_tmp <- data.seurat_all[[exp]]
-  data.seurat_tmp <- NormalizeData(data.seurat_tmp, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
-  data.seurat_for_mnn[[exp]] <- FindVariableFeatures(data.seurat_tmp, selection.method = "vst", nfeatures = 2000, verbose = F)
-}
-
-# Then running the Seurat integration
-int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
-int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
-data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
-DefaultAssay(data.seurat_integrated) <- "integrated"
-
-# Run the default Seurat pipeline on the integrated object
-data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
-data.seurat_integrated <- RunPCA(data.seurat_integrated, assay = "integrated", npcs = 100, verbose = F)
-
-# run the Jackstraw plot on 200 PCs (3h). Approximately ~100PCs are significant.
-#data.seurat_integrated <- JackStraw(data.seurat_integrated, assay = "integrated", reduction = "pca", dims = 200) # 1h
-#data.seurat_integrated <- ScoreJackStraw(data.seurat_integrated, reduction = "pca", dims = 1:200)
-#JackStrawPlot(data.seurat_integrated, dims = 1:100)
-set.seed(5)
-data.seurat_integrated <- RunTSNE(data.seurat_integrated, reduction = "pca", dims = 1:100)
-data.seurat_integrated <- RunUMAP(data.seurat_integrated, reduction = "pca", dims = 1:100)
-data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
-
-# Save Integrated Seurat object
-saveRDS(data.seurat_integrated, "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_cycling_Phase.rds")
+data.seurat_integrated <- readRDS("results/C3H10_10X_all_exps_integrated_functional_TF_atlas_cycling_Phase.rds")
+dim(data.seurat_integrated)
 ```
 
 # Figure 2a
