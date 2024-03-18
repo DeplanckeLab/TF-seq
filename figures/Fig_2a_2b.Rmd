@@ -1,0 +1,185 @@
+---
+title: "Figure 2a, b - Reproducibility script"
+author: "Wangjie Liu / Vincent Gardeux / Pernille"
+date: "2024/01/25"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For single-cell pipeline
+suppressPackageStartupMessages(library(ggplot2)) # For plotting
+suppressPackageStartupMessages(library(tidyverse)) # For data tidying
+suppressPackageStartupMessages(library(clustree)) # For clustering tree
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("ggplot2"), "version", as.character(packageVersion("ggplot2")), "\n")
+cat(bold("tidyverse"), "version", as.character(packageVersion("tidyverse")), "\n")
+cat(bold("clustree"), "version", as.character(packageVersion("clustree")), "\n")
+
+# Random seed
+set.seed(42)
+```
+
+# First, I'll read the final atlas Seurat object
+```{r}
+data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
+dim(data.seurat) # 55536 39063
+```
+
+# Filtering the Seurat object
+```{r}
+# Keeping functional, cycling, D0 and ref cells
+data.seurat <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") | data.seurat$Phase_corrected %in% c("G2M", "S")]
+dim(data.seurat) # 55536 24872
+
+# remove TF cells with less than 5 cells per TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 5]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 5 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+```
+
+# Now performing the integration (~8mn for FindIntegrationAnchors)
+
+```{r}
+# Processing each batch separately
+
+data.seurat_all <- SplitObject(data.seurat, split.by = "batch")
+
+# First, Normalize and HVG on each Seurat object
+data.seurat_for_mnn <- list()
+for(exp in names(data.seurat_all)){
+  data.seurat_tmp <- data.seurat_all[[exp]]
+  data.seurat_tmp <- NormalizeData(data.seurat_tmp, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
+  data.seurat_for_mnn[[exp]] <- FindVariableFeatures(data.seurat_tmp, selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+# Then running the Seurat integration
+int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
+int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
+data.data.seurat_integratedegrated <- IntegrateData(anchorset = int_anchors, verbose = F)
+DefaultAssay(data.data.seurat_integratedegrated) <- "integrated"
+
+# Run the default Seurat pipeline on the integrated object
+data.data.seurat_integratedegrated <- ScaleData(data.data.seurat_integratedegrated, assay = "integrated", verbose = F)
+data.data.seurat_integratedegrated <- RunPCA(data.data.seurat_integratedegrated, assay = "integrated", npcs = 100, verbose = F)
+
+# run the Jackstraw plot on 200 PCs (3h). Approximately ~100PCs are significant.
+#data.data.seurat_integratedegrated <- JackStraw(data.data.seurat_integratedegrated, assay = "integrated", reduction = "pca", dims = 200) # 1h
+#data.data.seurat_integratedegrated <- ScoreJackStraw(data.data.seurat_integratedegrated, reduction = "pca", dims = 1:200)
+#JackStrawPlot(data.data.seurat_integratedegrated, dims = 1:100)
+set.seed(5)
+data.data.seurat_integratedegrated <- RunTSNE(data.data.seurat_integratedegrated, reduction = "pca", dims = 1:100)
+data.data.seurat_integratedegrated <- RunUMAP(data.data.seurat_integratedegrated, reduction = "pca", dims = 1:100)
+data.data.seurat_integratedegrated <- SetIdent(data.data.seurat_integratedegrated, value = "TF")
+
+# Save Integrated Seurat object
+saveRDS(data.data.seurat_integratedegrated, "results/C3H10_10X_all_exps_merged_genefiltered_integrated_filtered_functional_cycling.rds")
+```
+
+# Figure 2a
+
+```{r}
+# set color code
+col <- readRDS("figures/Fig_2a_colorcode_TFs.rds")
+# D0 = "black"
+# D0_confluent = "gray52"
+# most TFs = "gray85"
+```
+
+
+```{r Fig_2a, fig.width=6.5, fig.height=5}
+arr <- list(x = -9.5, y = -7.5, x_len = 3, y_len = 3)
+p_umap <- DimPlot(data.seurat_integrated, group.by = "TF", cols = col)+
+      annotate("segment", x = arr$x, xend = arr$x + c(arr$x_len, 0), y = arr$y, yend = arr$y + c(0, arr$y_len), arrow = arrow(type = "closed", length = unit(6, 'pt')))+ 
+  theme(axis.line = element_blank(),
+        legend.position = "none", 
+        panel.grid.major=element_blank(), 
+        panel.grid.minor=element_blank(), 
+        axis.text=element_blank(), 
+        axis.ticks=element_blank(), 
+        plot.background=element_blank(), 
+        panel.background=element_blank())+
+  xlab(label = "") + ylab(label = "")+
+  labs(title = NULL)
+p_umap
+ggsave(p_umap, filename = "figures/Fig_2a.pdf", width = 6.5, height = 5)
+```
+
+# plot same Figure 2a but with TFs of interest being labelled 
+
+```{r}
+TFoi <- c("D0","D0_confluent",
+          "Adipo_ref","Myo_ref",
+          "Mycn","Cebpa","Pparg","Myod1","Runx2","Myog",
+          "Yap1","Tfeb",
+          "Gata4","Gata3","Gata5","Gata2",
+          "Klf4","Pdx1","Fos","Dlx6",
+          "Nkx1-2","Hoxb6","Hoxa6","Hoxa9","Hoxa13","Cdx2","Cdx4",
+          "Foxa1","Etv1","Ets1","Esr2","Sox2","Pou5f1",
+          "Egr1","Hey1","Pax9","Grhl2","T","Pitx2","Mafb","Atf4",
+          "Irf3","Lzts2","Hnf4a","Grhl2"
+)
+
+data.seurat_integrated$is.TFois <- data.seurat_integrated$TF %>% as.character()
+data.seurat_integrated$is.TFois[!data.seurat_integrated$is.TFois %in% TFoi] <- NA
+cols.oi <- col[TFoi]
+cols.oi[NA] <- "gray85"
+p_umap_label <- DimPlot(data.seurat_integrated, group.by = "is.TFois", cols = cols.oi, label = T, repel = T)+
+      annotate("segment", x = arr$x, xend = arr$x + c(arr$x_len, 0), y = arr$y, yend = arr$y + c(0, arr$y_len), arrow = arrow(type = "closed", length = unit(6, 'pt')))+ 
+  theme(axis.line = element_blank(),
+        legend.position = "none", 
+        panel.grid.major=element_blank(), 
+        panel.grid.minor=element_blank(), 
+        axis.text=element_blank(), 
+        axis.ticks=element_blank(), 
+        plot.background=element_blank(), 
+        panel.background=element_blank())+
+  xlab(label = "") + ylab(label = "")+
+  labs(title = NULL)
+p_umap_label
+```
+
+# Figure 2b
+
+```{r}
+# find clusters for the functional TF atlas
+
+data.data.seurat_integratedegrated <- data.data.seurat_integratedegrated %>% FindNeighbors(verbose = FALSE)
+# run different resolution and then clustree to find an optimal resolution for clustering
+for (i in seq(0.1, 1.5, 0.1)){
+    data.data.seurat_integratedegrated <- FindClusters(data.data.seurat_integratedegrated, resolution = i, verbose = FALSE)
+    p <- DimPlot(data.data.seurat_integratedegrated, group.by = "seurat_clusters",label = T)+labs(title = paste0("resolution_",i))
+    print(p)
+}
+clustree(data.data.seurat_integratedegrated)
+```
+
+
+```{r Fig_2b, fig.width=7, fig.height=5}
+# apply integrated_snn_res.0.1 for Figure 2b to present general processes in the atlas
+cols.cluster <- c("#FFCCCC","#99CCFF","#FF9933","#CCCC00","#CC99CC","#FF99FF")
+names(cols.cluster) <- c(0,1,2,3,4,5)
+cols.cluster
+
+arr <- list(x = -9.5, y = -7.5, x_len = 3, y_len = 3)
+p <- DimPlot(data.seurat_integrated, group.by = "integrated_snn_res.0.1",label = T, order = T)+
+    scale_color_manual(labels = c("0", "1", "2", "3", "4", "5"), values = cols.cluster)+
+    annotate("segment", x = arr$x, xend = arr$x + c(arr$x_len, 0), y = arr$y, yend = arr$y + c(0, arr$y_len), arrow = arrow(type = "closed", length = unit(6, 'pt')))+ 
+    theme_void() + 
+    labs(title = NULL, color = "Cluster")
+p
+ggsave(p, filename = "figures/Fig_2b.pdf", width = 7, height = 5)
+```
