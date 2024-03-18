@@ -169,7 +169,7 @@ clustree(data.data.seurat_integratedegrated)
 
 
 ```{r Fig_2b, fig.width=7, fig.height=5}
-# apply integrated_snn_res.0.1 for Figure 2b to present general processes in the atlas
+# apply integrated_snn_res.0.1 for Figure 2b to present general cellular processes in the atlas
 cols.cluster <- c("#FFCCCC","#99CCFF","#FF9933","#CCCC00","#CC99CC","#FF99FF")
 names(cols.cluster) <- c(0,1,2,3,4,5)
 cols.cluster
