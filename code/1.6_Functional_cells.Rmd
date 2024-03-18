@@ -169,5 +169,5 @@ data.seurat$functional_cells[data.seurat$TF == "Adipo_ref"] <- "Adipo_ref"
 data.seurat$functional_cells[data.seurat$TF == "Myo_ref"] <- "Myo_ref"
 data.seurat$functional_cells[data.seurat$TF %in% c("D0", "D0_confluent")] <- "D0"
 
-saveRDS(data.seurat, "results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
+saveRDS(data.seurat, "results/C3H10_10X_all_exps_merged_genefiltered_integrated.rds")
 ```
