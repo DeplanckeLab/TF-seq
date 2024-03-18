@@ -1,0 +1,30 @@
+---
+title: "Figure S4a,b - Reproducibility script"
+author: "Wangjie Liu"
+date: "2024-03-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/NAS2/TF-seq/Vincent/TF-seq_proper/")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For single-cell pipeline
+suppressPackageStartupMessages(library(ggplot2)) # For plotting
+suppressPackageStartupMessages(library(tidyverse)) # For data tidying
+suppressPackageStartupMessages(library(clustree)) # For clustering tree
+suppressPackageStartupMessages(library(crayon)) # Just for bolding the console output :D
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("ggplot2"), "version", as.character(packageVersion("ggplot2")), "\n")
+cat(bold("tidyverse"), "version", as.character(packageVersion("tidyverse")), "\n")
+cat(bold("clustree"), "version", as.character(packageVersion("clustree")), "\n")
+```
+
