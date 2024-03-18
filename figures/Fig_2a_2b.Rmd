@@ -53,7 +53,7 @@ message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less t
 data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
 ```
 
-# Now performing the integration (~8mn for FindIntegrationAnchors)
+# Now performing the integration (~8mn for FindIntegrationAnchors) - by batch
 
 ```{r}
 # Processing each batch separately
