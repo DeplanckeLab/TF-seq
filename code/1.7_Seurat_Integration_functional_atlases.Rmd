@@ -1,0 +1,125 @@
+---
+title: "Seurat integration for functional TF atlases"
+author: "Wangjie Liu"
+date: "2024-03-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) # For single-cell pipeline
+suppressPackageStartupMessages(library(tidyverse)) # For data tidying
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("tidyverse"), "version", as.character(packageVersion("tidyverse")), "\n")
+
+# Random seed
+set.seed(42)
+
+# to run seurat integration
+seurat_integration <- function(data, # Seurat object filtered with cells of interest
+                               min.nCell = 5, # minimun number of cells per TF
+                               group.splitby = "batch",
+                               NPCs = 100,
+                               OutputDir = "results/seu_integrated.rds"){
+  
+  # remove TF cells with less than min.nCell (default 5) cells per TF
+  removed_tfs <- names(table(data$TF))[table(data$TF) < min.nCell]
+  message("Removing ",sum(data$TF %in% removed_tfs), " TF cells with less than 5 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+  data <- data[,!data$TF %in% removed_tfs]
+  message("keep ",ncol(data), " cells")
+  
+  # Processing group separately 
+  data.seurat_all <- SplitObject(data, split.by = group.splitby)
+
+  # First, Normalize and HVG on each Seurat object
+  data.seurat_for_mnn <- list()
+  for(exp in names(data.seurat_all)){
+   data.seurat_tmp <- data.seurat_all[[exp]]
+    data.seurat_tmp <- NormalizeData(data.seurat_tmp, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
+   data.seurat_for_mnn[[exp]] <- FindVariableFeatures(data.seurat_tmp, selection.method = "vst", nfeatures = 2000, verbose = F)
+  }
+
+  # Then running the Seurat integration
+  int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
+  int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
+  data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
+  DefaultAssay(data.seurat_integrated) <- "integrated"
+
+  # Run the default Seurat pipeline on the integrated object
+  data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
+  data.seurat_integrated <- RunPCA(data.seurat_integrated, assay = "integrated", npcs = NPCs, verbose = F)
+
+  # run the Jackstraw plot on 200 PCs (3h). Approximately ~100PCs are significant.
+  #data.seurat_integrated <- JackStraw(data.seurat_integrated, assay = "integrated", reduction = "pca", dims = 200) # 1h
+  #data.seurat_integrated <- ScoreJackStraw(data.seurat_integrated, reduction = "pca", dims = 1:200)
+  #JackStrawPlot(data.seurat_integrated, dims = 1:100)
+  set.seed(5)
+  data.seurat_integrated <- RunTSNE(data.seurat_integrated, reduction = "pca", dims = 1:NPCs)
+  data.seurat_integrated <- RunUMAP(data.seurat_integrated, reduction = "pca", dims = 1:NPCs)
+  data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
+
+  # Save Integrated Seurat object
+  saveRDS(data.seurat_integrated, OutputDir)
+}
+```
+
+# read the final atlas Seurat object
+```{r}
+data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
+dim(data.seurat) # 55536 39063
+```
+
+# Filtering the data and run seurat integration
+
+## option 1) Keeping functional, S+G2M at defalut phase, D0 and ref cells
+
+```{r}
+# Keeping functional, cycling, D0 and ref cells
+data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") | data.seurat$Phase %in% c("G2M", "S")]
+dim(data.filtered) 
+
+seurat_integration(data = data.filtered,
+                   min.nCell = 5,
+                   group.splitby = "batch",
+                   NPCs = 100,
+                   OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_cycling_Phase.rds")
+```
+
+## option 2) Keeping functional, D0 and ref cells in G1 at default phase
+
+```{r}
+# Keeping functional, cycling, D0 and ref cells
+data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") & data.seurat$Phase == "G1"]
+dim(data.filtered) 
+
+seurat_integration(data = data.filtered,
+                   min.nCell = 5,
+                   group.splitby = "batch",
+                   NPCs = 100,
+                   OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase.rds")
+```
+
+## option 3) Keeping functional, D0 and ref cells in G1 at adjusted phase
+
+```{r}
+# Keeping functional, cycling, D0 and ref cells
+data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") & data.seurat$Phase_corrected == "G1"]
+dim(data.filtered) 
+
+seurat_integration(data = data.filtered,
+                   min.nCell = 5,
+                   group.splitby = "batch",
+                   NPCs = 100,
+                   OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase_corrected.rds")
+```
+
