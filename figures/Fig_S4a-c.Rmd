@@ -34,20 +34,23 @@ cat(bold("clustree"), "version", as.character(packageVersion("clustree")), "\n")
 seu <- readRDS("results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase.rds")
 ```
 
+
 # Figure S4a
 
-```{r Fig_S4a, fig.width=10, fig.height=14}
+```{r}
 # find clusters for the functional TF atlas
-seu <- seu %>% FindNeighbors(verbose = FALSE)
 # run different resolution and then clustree to find an optimal resolution for clustering
 for (i in seq(0.1, 1.5, 0.1)){
     seu <- FindClusters(seu, resolution = i, verbose = FALSE)
     p <- DimPlot(seu, group.by = "seurat_clusters",label = T)+labs(title = paste0("resolution_",i))
     print(p)
 }
-p.clustree <- clustree(seu, node_text_size = 0, edge_width = 1)
+```
+
+```{r Fig_S4a, fig.width=10, fig.height=14}
+p.clustree <- clustree(seu, node_text_size = 0, edge_width = 1)+labs(title = paste0("npcs = ",NPCs))
 p.clustree
-ggsave(p.clustree, filename = "figures/Fig_S4a.pdf",
+ggsave(p.clustree, filename = paste0("figures/Fig_S4a_phase_",NPCs,".pdf"),
        width = 10, height = 14, units = "in")
 ```
 
@@ -55,16 +58,17 @@ ggsave(p.clustree, filename = "figures/Fig_S4a.pdf",
 
 ```{r Fig_S4b, fig.width=7, fig.height=5}
 # choose resolution 1.0 for clustering, because the number of clusters becomes relatively fixed at res 0.9-1.0-1.1 and the intercluster arrows/interactions are relatively less when changing res from 1.0 to 1.1 
-seu$seurat_clusters <- seu$integrated_snn_res.1.1
+seu$seurat_clusters <- seu$integrated_snn_res.0.6
 
 # set color scheme
-Cols_res_1 <- c("#FFFFCC","#CC9966","#FFCC99","#FF9933","#FF9999","#CC6666",
-                "#FF99FF","#FFCCCC","#99FF99","#CCCC00","#339900","#CC99CC",
-                "#66CCCC","#3399FF","#CCFF00","#660066","#FFFF00","#CC00FF","#003300")
-names(Cols_res_1) <- as.character(0:18)
+Cols_res_0.6 <- c("#FFFFCC","#FFCCCC","#99FF99","#FFCC99","#FF9933","#339900",
+                "#CCCC00","#FFFF00","#CC6666","#FF99FF","#CC00FF","#660066",
+                "#66CCCC","#003399","#CC99CC","#3399FF","#CC9966","#99CCFF","#FF9999")
 
-# plot the atals on UMAP
-p_umap <- DimPlot(seu, group.by = "seurat_clusters", order = T, label = T, cols = Cols_res_1)+
+names(Cols_res_0.6) <- as.character(0:18)
+
+# plot the atlas on UMAP
+p_umap <- DimPlot(seu, group.by = "seurat_clusters", order = T, label = F, cols = Cols_res_0.6)+
     theme(axis.line = element_blank(),
         legend.position = "none", 
         panel.grid.major=element_blank(), 
@@ -81,13 +85,12 @@ ggsave(p_umap, filename = "figures/Fig_S4b.pdf", width = 7, height = 5)
 
 # Figure S4c
 
-### extract clustering metadata at "integrated_snn_res.1.1"
+### extract clustering metadata at "integrated_snn_res.0.6"
 
-```{r Fig_S4b, fig.width=5, fig.height=6}
-
+```{r}
 df <- data.frame(row.names = rownames(seu@meta.data),
                  TF = seu$TF,
-                 Cluster = seu$integrated_snn_res.0.8)
+                 Cluster = seu$integrated_snn_res.0.6)
 df$Cluster <- as.factor(df$Cluster)
 ```
 
@@ -119,7 +122,7 @@ df_percent <- lapply(unique(df$Cluster), function(x){
 })
 df_percent <- data.table::rbindlist(df_percent)
 df_percent$percentage_TF <- df_percent$percentage_TF*100 %>% as.numeric()
-df_percent$percentage_TF <- round(df_percent$percentage_TF, digits = 2)
+df_percent$percentage_TF <- round(df_percent$percentage_TF)
 df_percent <- df_percent[df_percent$percentage_TF >= 15 & df_percent$percentage_TF < 85,]
 ```
 
@@ -127,9 +130,9 @@ df_percent <- df_percent[df_percent$percentage_TF >= 15 & df_percent$percentage_
 
 ```{r}
 D0.clusters <- df_percent$Cluster[df_percent$TF == "D0" & df_percent$percentage_TF >= 15] %>% as.character() # main clusters of D0 (non-confluent only)
-D0.clusters # "1" "5" "7"
+D0.clusters # "5" "1" "3"
 D0.confluent.clusters <- df_percent$Cluster[df_percent$TF == "D0_confluent" & df_percent$percentage_TF >= 15] %>% as.character()
-D0.confluent.clusters # "1" "0" "4"
+D0.confluent.clusters # "1" "0" "3"
 ## use D0_confluent as the real control
 TF.keep <- table(df_percent$TF[!df_percent$Cluster %in% D0.confluent.clusters]) 
 TF.keep <- TF.keep[TF.keep > 1] %>% names()
@@ -167,7 +170,7 @@ rownames(df_mat) <- rownames.df_mat
 TF.com <- c("Cebpa-Mycn","Cebpa-Myog","Cebpa-Pparg","Mycn-Myog","Mycn-Pparg","Mycn-Runx2","Pparg-Runx2")
 df_mat <- df_mat[!rownames(df_mat) %in% c(TF.com, "Adipo_ref","Myo_ref"),]
 ```
-
+### plot heatmap
 
 ```{r Fig_S4b, fig.width=5, fig.height=6}
 #pheatmap
@@ -184,32 +187,6 @@ p_heatmap <- pheatmap::pheatmap(df_mat,
 
 p_heatmap
 
-
-# ggsave(p_heatmap, filename = "figures/Fig_S4c.pdf",
-#        width = 5, height = 6, units = "in")
+ggsave(p_heatmap, filename = "figures/Fig_S4c.pdf",
+       width = 5, height = 6, units = "in")
 ```
-
-```{r}
-DimPlot(seu, cells.highlight = colnames(seu)[seu$TF == "D0_confluent"])
-DimPlot(seu, cells.highlight = colnames(seu)[seu$TF == "D0"])
-
-```
-```{r}
-table(seu$integrated_snn_res.1[seu$TF == "Etv1"])
-```
-```{r}
-for (i in seq(0.1,1.5,0.1)){table(subset(seu, TF == "Etv1")[[paste0("integrated_snn_res.",i)]]) %>% print()}
-```
-
-```{r}
-  data.seurat_integrated <- JackStraw(data.seurat_integrated, assay = "integrated", reduction = "pca", dims = 200) # 1h
-  data.seurat_integrated <- ScoreJackStraw(data.seurat_integrated, reduction = "pca", dims = 1:200)
-  JackStrawPlot(data.seurat_integrated, dims = 1:100)
-```
-
-```{r}
-  data.seurat_integrated_phase <- JackStraw(data.seurat_integrated_phase, assay = "integrated", reduction = "pca", dims = 200) # 1h
-  data.seurat_integrated_phase <- ScoreJackStraw(data.seurat_integrated_phase, reduction = "pca", dims = 1:200)
-  JackStrawPlot(data.seurat_integrated_phase, dims = 1:100)
-```
-
