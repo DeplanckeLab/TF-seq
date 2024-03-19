@@ -59,7 +59,10 @@ seurat_integration <- function(data, # Seurat object filtered with cells of inte
   data.seurat_integrated <- ScaleData(data.seurat_integrated, assay = "integrated", verbose = F)
   data.seurat_integrated <- RunPCA(data.seurat_integrated, assay = "integrated", npcs = NPCs, verbose = F)
 
-  # run the Jackstraw plot on 200 PCs (3h). Approximately ~100PCs are significant.
+  # run the Jackstraw plot on 200 PCs (3h). 
+    ## 1) Approximately ~100PCs are significant for functional TF atlas with all cycling cells, D0 and ref cells (default phase)
+    ## 2) Approximately ~80PCs are significant for G1-phase functional TF atlas with D0 and ref cells (default phase)
+    ## 3) Approximately ~80PCs are significant for G1-phase functional TF atlas with D0 and ref cells (adjusted phase)
   #data.seurat_integrated <- JackStraw(data.seurat_integrated, assay = "integrated", reduction = "pca", dims = 200) # 1h
   #data.seurat_integrated <- ScoreJackStraw(data.seurat_integrated, reduction = "pca", dims = 1:200)
   #JackStrawPlot(data.seurat_integrated, dims = 1:100)
