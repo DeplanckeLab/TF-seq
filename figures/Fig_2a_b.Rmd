@@ -106,8 +106,8 @@ p_umap_label
 # Figure 2b
 
 ```{r}
-# find clusters for the functional TF atlas
-data.seurat_integrated <- data.seurat_integrated %>% FindNeighbors(verbose = FALSE)
+# find clusters for the functional TF atlas 
+data.seurat_integrated <- data.seurat_integrated %>% FindNeighbors(dims = 1:100)
 # run different resolution and then clustree to find an optimal resolution for clustering
 for (i in seq(0.1, 1.5, 0.1)){
     data.seurat_integrated <- FindClusters(data.seurat_integrated, resolution = i, verbose = FALSE)
@@ -117,18 +117,10 @@ for (i in seq(0.1, 1.5, 0.1)){
 clustree(data.seurat_integrated)
 ```
 
-# save clustering metadata onto the seurat object
-
-```{r}
-data.seurat_integrated$seurat_clusters <- data.seurat_integrated$integrated_snn_res.0.2
-saveRDS(data.seurat_integrated, "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_cycling_Phase.rds")
-```
-
-
 ```{r Fig_2b, fig.width=6.5, fig.height=5}
 # apply integrated_snn_res.0.2 for Figure 2b to present general cellular processes in the atlas
-cols.cluster <- c("#FFCCCC","#99CCFF","#FF9933","#FFCC99","#99FF99","#CCCC00","#FF99FF","#CC99CC")
-names(cols.cluster) <- c(0,1,2,3,4,5,6,7)
+cols.cluster <- c("#99CCFF","#FFCCCC","#FFCC99","#FFFFCC","#FF9933","#99FF99","#CC00FF","#CCCC00","#FF99FF","#FF9999","#CC99CC")
+names(cols.cluster) <- as.character(0:10)
 cols.cluster
 
 

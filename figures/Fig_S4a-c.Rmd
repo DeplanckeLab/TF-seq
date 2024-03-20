@@ -34,7 +34,6 @@ cat(bold("clustree"), "version", as.character(packageVersion("clustree")), "\n")
 seu <- readRDS("results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase.rds")
 ```
 
-
 # Figure S4a
 
 ```{r}
@@ -48,9 +47,9 @@ for (i in seq(0.1, 1.5, 0.1)){
 ```
 
 ```{r Fig_S4a, fig.width=10, fig.height=14}
-p.clustree <- clustree(seu, node_text_size = 0, edge_width = 1)+labs(title = paste0("npcs = ",NPCs))
+p.clustree <- clustree(seu, node_text_size = 0, edge_width = 1)
 p.clustree
-ggsave(p.clustree, filename = paste0("figures/Fig_S4a_phase_",NPCs,".pdf"),
+ggsave(p.clustree, filename = "figures/Fig_S4a",
        width = 10, height = 14, units = "in")
 ```
 
@@ -90,7 +89,7 @@ ggsave(p_umap, filename = "figures/Fig_S4b.pdf", width = 7, height = 5)
 ```{r}
 df <- data.frame(row.names = rownames(seu@meta.data),
                  TF = seu$TF,
-                 Cluster = seu$integrated_snn_res.0.6)
+                 Cluster = seu$integrated_snn_res.0.5)
 df$Cluster <- as.factor(df$Cluster)
 ```
 
@@ -170,6 +169,7 @@ rownames(df_mat) <- rownames.df_mat
 TF.com <- c("Cebpa-Mycn","Cebpa-Myog","Cebpa-Pparg","Mycn-Myog","Mycn-Pparg","Mycn-Runx2","Pparg-Runx2")
 df_mat <- df_mat[!rownames(df_mat) %in% c(TF.com, "Adipo_ref","Myo_ref"),]
 ```
+
 ### plot heatmap
 
 ```{r Fig_S4b, fig.width=5, fig.height=6}
@@ -190,3 +190,5 @@ p_heatmap
 ggsave(p_heatmap, filename = "figures/Fig_S4c.pdf",
        width = 5, height = 6, units = "in")
 ```
+
+
