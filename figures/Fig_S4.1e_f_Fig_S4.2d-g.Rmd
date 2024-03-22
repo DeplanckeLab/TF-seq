@@ -7,8 +7,12 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "./")
+knitr::opts_knit$set(root.dir = "~/NAS2/TF-seq/Vincent/TF-seq_proper/")
 getwd()
+```
+
+```{r}
+setwd("~/NAS2/TF-seq/Vincent/TF-seq_proper/")
 ```
 
 ## Libraries & functions
@@ -19,27 +23,270 @@ First, I'm loading the required libraries & functions
 suppressPackageStartupMessages(library(Seurat, lib.loc = "~/.local/share/")) 
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(ggplot2)) 
+suppressPackageStartupMessages(library(cowplot)) 
 suppressPackageStartupMessages(library(tidyverse)) 
 suppressPackageStartupMessages(library(gridExtra)) 
-suppressPackageStartupMessages(library(viridis)) 
-suppressPackageStartupMessages(library(monocle3)) 
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(monocle3)) # monocle3 version 1.3.4 
+# suppressPackageStartupMessages(library(monocle3, lib.loc = "~/.local/share/"))  # 1.0.0
+suppressPackageStartupMessages(library(org.Mm.eg.db)) 
+suppressPackageStartupMessages(library(clusterProfiler))
+suppressPackageStartupMessages(library(pheatmap))
 suppressPackageStartupMessages(library(crayon)) 
 
+
+
+
+cat(bold("R"), "version", as.character(version$version.string), "\n")
 cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
 cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
 cat(bold("ggplot2"), "version", as.character(packageVersion("ggplot2")), "\n")
+cat(bold("cowplot"), "version", as.character(packageVersion("cowplot")), "\n")
 cat(bold("tidyverse"), "version", as.character(packageVersion("tidyverse")), "\n")
 cat(bold("gridExtra"), "version", as.character(packageVersion("gridExtra")), "\n")
 cat(bold("viridis"), "version", as.character(packageVersion("viridis")), "\n")
+cat(bold("RColorBrewer"), "version", as.character(packageVersion("RColorBrewer")), "\n")
 cat(bold("monocle3"), "version", as.character(packageVersion("monocle3")), "\n")
-
+cat(bold("org.Mm.eg.db"), "version", as.character(packageVersion("org.Mm.eg.db")), "\n")
+cat(bold("clusterProfiler"), "version", as.character(packageVersion("clusterProfiler")), "\n")
+cat(bold("pheatmap"), "version", as.character(packageVersion("pheatmap")), "\n")
+# R version R version 4.3.1 (2023-06-16) 
 # Seurat version 4.4.0 
-# data.table version 1.14.8 
-# ggplot2 version 3.4.3 
+# data.table version 1.15.2 
+# ggplot2 version 3.5.0 
+# cowplot version 1.1.3 
 # tidyverse version 2.0.0 
 # gridExtra version 2.3 
-# viridis version 0.6.4 
-# monocle3 version 1.0.0 
+# viridis version 0.6.5
+# RColorBrewer version 1.1.3 
+# monocle3 version 1.3.4  
+# org.Mm.eg.db version 3.17.0
+# clusterProfiler version 4.8.3
+# pheatmap version 1.0.12
+
+# monocle3 single-cell pipeline
+monocle3_reanalysis <- function(tfoi, data, data.gene_annot, num_dims, res){
+  batch.oi <- table(data$batch[data$TF == tfoi]) %>% names()
+  cat("batch for ", tfoi, ": ", "\n")
+  cat(batch.oi, "\n")
+  seu.oi <- subset(data, TF %in% c("D0","D0_confluent", tfoi) & batch %in% batch.oi)
+  seu.oi$TF <- factor(seu.oi$TF, levels = c("D0","D0_confluent",tfoi))
+  cat("Number of cells for: ", "\n")
+  cat(table(seu.oi$TF), "\n")
+  
+  
+  # prepare cds
+  cell.meta <- seu.oi@meta.data[, c("nCount_RNA","nFeature_RNA","Phase_corrected","batch","Dose","TF")]
+  gene.meta <- data.frame(ens_id = rownames(seu.oi@assays$RNA@counts), gene_short_name = data.gene_annot[rownames(seu.oi@assays$RNA@counts),"gene_symbol"], gene_type = data.gene_annot[rownames(seu.oi@assays$RNA@counts), "biotype"])
+  rownames(gene.meta) <- rownames(seu.oi@assays$RNA@counts)
+  cds <- new_cell_data_set(expression_data = seu.oi@assays$RNA@counts, 
+                         cell_metadata = cell.meta,
+                         gene_metadata = gene.meta)
+  
+  # preprocess
+  set.seed(10)
+  cds <- preprocess_cds(cds, num_dim = num_dims) # dimensionality of the reduced space, decided according to the variance explained by each PC
+  plot_pc_variance_explained(cds) %>% 
+    print()
+  
+  #remove batch
+  if (length(batch.oi) > 1){
+    cds <- align_cds(cds, alignment_group = "batch")
+  }
+  #reduce dimension
+  cds <- reduce_dimension(cds)
+  # clustering
+  cds <- cluster_cells(cds, resolution = res) 
+  plot_cells(cds, color_cells_by = "TF", show_trajectory_graph = F, cell_size = 2, label_cell_groups = F) %>% 
+    print()
+  
+  # adjust meta data for control and TFoi
+  cds$meta.new <- cds@clusters$UMAP$clusters %>% as.character()
+  clusters.tfoi <- cds$meta.new[!cds$TF %in% c("D0","D0_confluent")] %>% table()
+  clusters.tfoi <- clusters.tfoi[clusters.tfoi >= 10] %>% names() # at least 10 TF cells in that cluster
+  cds$meta.new[!cds$meta.new %in% clusters.tfoi] <- "Control"
+  
+  percent.tfoi <- table(cds$meta.new[cds$TF == tfoi]) / table(cds$meta.new)[names(table(cds$meta.new[cds$TF == tfoi]))]
+
+  
+  clusters.tfoi <- intersect(clusters.tfoi, names(percent.tfoi[percent.tfoi > 0.5])) # at least 50% TF cells in that cluster
+  cds$meta.new[!cds$meta.new %in% clusters.tfoi] <- "Control"
+  cds$meta.new <- factor(cds$meta.new, levels = c("Control", clusters.tfoi))
+  plot_cells(cds, color_cells_by = "meta.new", show_trajectory_graph = F, cell_size = 2, label_cell_groups = F) %>% 
+    print()
+
+  
+  return(cds)
+}
+
+
+# plot TF dose and clusters on UMAP, and TF dose grouped by clusters on violin
+plot_dose_clusters <- function(data, tfoi, PATH.UMAP, PATH.violin, cols, output_plot = TRUE){
+  # plot dose on UMAP
+  p_dose <- plot_cells(data, 
+            color_cells_by = "Dose", 
+            show_trajectory_graph = F, 
+            cell_size = 1, 
+            label_cell_groups = F)+
+  geom_point(aes(color = cell_color), 
+             size = 1, 
+             stroke = 1.5)+
+  scale_color_continuous(type = "viridis")+
+  theme_void()+
+  labs(title = paste0(tfoi, " dose"))
+  # plot clusters on UMAP
+  p_cluster <- plot_cells(data, 
+            color_cells_by = "meta.new", 
+            show_trajectory_graph = F, 
+            cell_size = 1, 
+            label_cell_groups = F)+
+  geom_point(aes(color = cell_color), 
+             size = 1, 
+             stroke = 1.5)+
+  scale_color_manual(values = cols)+
+  theme_void()+
+  labs(title = "Cluster")
+
+  
+  # plot dose grouped by clusters on violin
+  meta.cluster <- colData(data)[, c("meta.new","Dose","TF")] %>% as.data.frame()
+  meta.cluster <- meta.cluster[meta.cluster$TF == tfoi & meta.cluster$meta.new != "Control", ]
+  p_violin <- ggplot(meta.cluster)+
+    geom_violin(mapping = aes(x = meta.new, y = Dose, fill = meta.new))+
+    scale_fill_manual(values = c(cols))+
+    theme_cowplot()+
+    labs(title = tfoi)
+  
+  # t test or pairwise t test for dose difference in clusters
+  clusters.TFoi <- meta.cluster$meta.new %>% as.character() %>% unique()
+  num_cluster <- length(clusters.TFoi)
+  print(clusters.TFoi)
+  if (num_cluster == 2){
+    pwc <- t.test(meta.cluster$Dose[meta.cluster$meta.new == clusters.TFoi[1]],meta.cluster$Dose[meta.cluster$meta.new == clusters.TFoi[2]])
+  } else if (num_cluster >2){
+    pwc <- pairwise.t.test(meta.cluster$Dose, meta.cluster$meta.new, p.adjust.method = "fdr")
+    pwc
+  }
+
+  cat("t test or pairwise t test:", "\n")
+  print(pwc)
+  
+  # save plots to pdf
+  if (output_plot == TRUE){
+     ggsave(p_dose + p_cluster, file = PATH.UMAP, width = 10, height = 4)
+     ggsave(p_violin, file = PATH.violin, width = 4, height = 4)
+  }
+  
+  p <- list(p_dose, p_cluster, p_violin)
+  names(p) <- c("umap.dose","umap.cluster","dose.violin")
+  
+  return(p)
+}
+
+# DE analysis
+Calculate_DE <- function(data){
+  variable_genes <- top_markers(data, group_cells_by = "meta.new", marker_sig_test = T )
+  variable_genes <- variable_genes %>% 
+    group_by(cell_group) %>% 
+    filter(marker_test_q_value < 0.05) 
+  variable_genes$cell_group <- factor(variable_genes$cell_group, levels = levels(data$meta.new))
+  return(variable_genes)
+}
+
+# exclude overlapped GO terms
+exclude_overlapped_GO <- function(percent.overlap = 0.5, df.GOenrich.res){
+  # order GO terms by p.adjust
+  # so that the intersection check is performed and 
+  # GO terms that are both overlapped with others and have lower p values than overlapped terms 
+  # will be excluded
+  df.GOenrich.res <- df.GOenrich.res[order(df.GOenrich.res$p.adjust, decreasing = T),] 
+  go.terms <- df.GOenrich.res$geneID
+  go.terms <- str_split(go.terms, "/")
+  names(go.terms) <- df.GOenrich.res$ID
+  
+  terms.overlap <- c()
+  nTerms <- length(go.terms)
+  if(nTerms > 1){
+    for (i in 1:(nTerms-1)){
+      Fractions <- lapply(go.terms[i:nTerms], function(x){
+        overlap.fract <- length(intersect(x, go.terms[[i]]))/length(x) 
+        return(overlap.fract)
+      })
+      names(Fractions) <- names(go.terms)[i:nTerms]
+      Fractions <- unlist(Fractions)
+      # if the term has more than 50% overlap with other terms
+      if (table(Fractions > percent.overlap)["TRUE"] == 1){ #only itself
+        terms.overlap[i] <- NA
+      } else{ # overlap with other terms
+        terms.overlap[i] <- names(go.terms)[i]
+      }
+    }
+    # exclude overlapped GO terms
+    df.new <- df.GOenrich.res[!df.GOenrich.res$ID %in% terms.overlap,]
+  } else if (nTerms == 1){
+    df.new <- df.GOenrich.res
+  } else if (nTerms <1){ # when 0 terms is significantly enriched
+    df.new <- NA
+  }
+  return(df.new)
+}
+
+# GO enrichment analysis and plot non-overlapped top GO terms 
+Calculate_topGO_plot <- function(data, num_topGO = 10, PATH.topGO, deg.sig, cols){
+  clusters.TFoi <- unique(as.character(cds$meta.new))
+  clusters.TFoi <- clusters.TFoi[clusters.TFoi != "Control"]
+  erich.summary.clusters <- lapply(clusters.TFoi, function(x){
+    erich.go.BP <- enrichGO(gene = deg.sig[deg.sig$cell_group == x, ]$gene_short_name,
+                            OrgDb = org.Mm.eg.db,
+                            keyType = "SYMBOL",
+                            ont = "BP",
+                            pvalueCutoff = 0.05,
+                            qvalueCutoff = 0.05)
+    erich.summary <- as.data.frame(erich.go.BP@result)
+    erich.summary$cluster <- x
+    erich.summary <- erich.summary %>% filter(p.adjust < 0.06) 
+    cat("check the summary of GO_BP enrichment for ", x, ": \n")
+    print(erich.summary)
+    return(erich.summary)
+  })
+  
+  # exclude overlapped GO withih each cluster
+  df.non_overlap <- lapply(erich.summary.clusters, function(x) exclude_overlapped_GO(percent.overlap = 0.5,
+                                                                                   df.GOenrich.res = x))
+  df.non_overlap <- rbindlist(df.non_overlap)
+
+  cat("!!! check if enriched GO terms are unique (FALSE) across clusters:", "\n")
+  print(table(duplicated(df.non_overlap$ID)))
+  
+
+  df.non_overlap <- df.non_overlap %>% 
+    group_by(cluster) %>% 
+    arrange(p.adjust, .by_group = T) %>% 
+    top_n(num_topGO, wt = -log10(p.adjust))
+  
+  data$meta.new <- fct_rev(data$meta.new)
+  df.non_overlap$cluster <- factor(df.non_overlap$cluster, levels = levels(data$meta.new)[levels(data$meta.new) != "Control"])
+  df.non_overlap <- df.non_overlap %>% 
+    group_by(cluster) %>% 
+    arrange(desc(p.adjust), .by_group = T) 
+  
+  
+  Description.order <- df.non_overlap$Description
+  df.non_overlap$Description <- factor(df.non_overlap$Description, levels = Description.order)
+  
+
+  p_GOenrich <- ggplot(df.non_overlap)+
+    geom_bar(mapping = aes(x = -log10(p.adjust), y = Description, fill = cluster), 
+             stat = "identity",  color = "white",
+             width=0.5)+
+    scale_fill_manual(values = cols)+
+    theme_cowplot()+
+    scale_x_continuous(position = "top")
+  print(p_GOenrich)
+
+  ggsave(p_GOenrich, file = PATH.topGO, width = 12, height = 6)
+} 
 ```
 
 ## read the functional TF atlas in G1 (default phase)
@@ -52,8 +299,8 @@ dim(seu_funct)
 # Figure S4.1e - upper panel
 
 ```{r Fig_S4.1e_up}
-TFoi <- c("Egr1","Esr2","Etv1")
-p_TFoi <- lapply(TFoi, function(x){
+TFois <- c("Egr1","Esr2","Etv1")
+p_TFois <- lapply(TFois, function(x){
   p <- DimPlot(seu_funct, cells.highlight = colnames(seu_funct)[seu_funct$TF == x], cols = "gray85", cols.highlight = "red", sizes.highlight = 1, pt.size = 0.1)+
     theme(axis.line = element_blank(),
     legend.position = "none", 
@@ -67,18 +314,18 @@ p_TFoi <- lapply(TFoi, function(x){
     labs(title = x)
   return(p)
 })
-p_TFoi
+p_TFois
 
 pdf("figures/Fig_S4.1e_up.pdf", width = 10, height = 8)
-marrangeGrob(p_TFoi, ncol = 2, nrow = 2)
+marrangeGrob(p_TFois, ncol = 2, nrow = 2)
 dev.off()
 ```
 
 # Figure S4.2d,e - upper panel & Figure S4.2g
 
 ```{r}
-TFoi <- c("Meis2","Myog","Grhl2")
-p_TFoi <- lapply(TFoi, function(x){
+TFois <- c("Meis2","Myog","Grhl2")
+p_TFois <- lapply(TFois, function(x){
   p <- DimPlot(seu_funct, cells.highlight = colnames(seu_funct)[seu_funct$TF == x],cols = "gray85", cols.highlight = "darkgreen", sizes.highlight = 1, pt.size = 0.1)+
     theme(axis.line = element_blank(),
     legend.position = "none", 
@@ -92,10 +339,10 @@ p_TFoi <- lapply(TFoi, function(x){
     labs(title = x)
   return(p)
 })
-p_TFoi
+p_TFois
 
 pdf("figures/Fig_S4.2d_e_up_Fig_S4.2g.pdf", width = 10, height = 8)
-marrangeGrob(p_TFoi, ncol = 2, nrow = 2)
+marrangeGrob(p_TFois, ncol = 2, nrow = 2)
 dev.off()
 ```
 
@@ -123,88 +370,243 @@ seu <- subset(seu, Phase_corrected == "G1")
 DefaultAssay(seu) <- "RNA"
 ```
 
-```{r}
-# subset to TFoi + ctr (D0+D0_confluent) cells in G1
-TFoi <- "Grhl2"
-batch.oi <- table(seu$batch[seu$TF == TFoi]) %>% names()
-seu.oi <- subset(seu, TF %in% c("D0","D0_confluent", TFoi) & batch %in% batch.oi)
-seu.oi$TF <- factor(seu.oi$TF, levels = c("D0","D0_confluent",TFoi))
-dim(seu.oi)
-table(seu.oi$TF)
-```
+# Figure 4c-e and Figure S4.1d
 
 ```{r}
-# monocle single-cell analysis pipeline
-cell.meta <- seu.oi@meta.data[, c("nCount_RNA","nFeature_RNA","Phase_corrected","batch","Dose","TF")]
-gene.meta <- data.frame(ens_id = rownames(seu.oi@assays$RNA@counts), gene_short_name = data.annot[rownames(seu.oi@assays$RNA@counts),"gene_symbol"], gene_type = data.annot[rownames(seu.oi@assays$RNA@counts), "biotype"])
-rownames(gene.meta) <- rownames(seu.oi@assays$RNA@counts)
-cds <- new_cell_data_set(expression_data = seu.oi@assays$RNA@counts, 
-                         cell_metadata = cell.meta,
-                         gene_metadata = gene.meta)
-```
-```{r}
-set.seed(10)
-cds <- preprocess_cds(cds, num_dim = 30) # dimensionality of the reduced space
-# for Kf4, Grhl2, num_dim = 30,
-# for Etv1, num_dim = 30
-# for Esr2, num_dim = 50
-# for Myog, num_dim = 30
-# for Runx2, num_dim = 50
-# for Egr1, num_dim = 30
-# for Meis2 num_dim = 30
-# for Foxa1 num_dim = 50
-#remove batch
-if (length(batch.oi) > 1){
-  cds <- align_cds(cds, alignment_group = "batch")  
-}
-cds <- reduce_dimension(cds)
-
-```
-
-```{r}
-plot_pc_variance_explained(cds)
-```
-
-```{r}
-set.seed(10)
-cds <- cluster_cells(cds, resolution = 0.3)
-```
-
-```{r}
-plot_cells(cds, color_cells_by = "cluster", show_trajectory_graph = F, cell_size = 2, label_cell_groups = F) 
-plot_cells(cds, color_cells_by = "TF", show_trajectory_graph = F, cell_size = 2, label_cell_groups = F) 
-# plot_cells(cds, color_cells_by = "batch", show_trajectory_graph = F, cell_size = 2, label_cell_groups = F) 
-```
-
-```{r}
-cells_2 <- names(cds@clusters$UMAP$clusters)[cds@clusters$UMAP$clusters == 2]
-cells_7 <- names(cds@clusters$UMAP$clusters)[cds@clusters$UMAP$clusters == 7]
-cells_10 <- names(cds@clusters$UMAP$clusters)[cds@clusters$UMAP$clusters == 10]
-DimPlot(seu_funct, cells.highlight = cells_2)
-DimPlot(seu_funct, cells.highlight = cells_7)
-DimPlot(seu_funct, cells.highlight = cells_10)
-```
-
-```{r}
+# re-analysis cells of interest
+cds <- monocle3_reanalysis(tfoi = "Klf4", data = seu, data.gene_annot = data.annot, num_dims = 12, res = 0.2)
 cds <- learn_graph(cds)
-cds <- order_cells(cds)
+cds <- order_cells(cds) 
+
+color.code <- c("lightgrey","#FF6600","blue")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","3", "1"))
+names(color.code) <- names(table(cds$meta.new))
+
+# calculate DE
+DEG.sig <- Calculate_DE(cds)
 ```
+
+```{r Fig_4c_d}
+# Fig_4c, d
+plot_dose_clusters(data = cds, 
+                   tfoi = "Klf4", 
+                   PATH.UMAP = "figures/Fig_4c.pdf",
+                   PATH.violin = "figures/Fig_4d.pdf",
+                   cols = color.code)
+# 	Welch Two Sample t-test
+# 
+# data:  meta.cluster$Dose[meta.cluster$meta.new == clusters.TFoi[1]] and meta.cluster$Dose[meta.cluster$meta.new == clusters.TFoi[2]]
+# t = 4.5769, df = 63.851, p-value = 2.234e-05
+# alternative hypothesis: true difference in means is not equal to 0
+```
+
+```{r Fig_4e}
+# Fig_4e
+Calculate_topGO_plot(data = cds,
+                     num_topGO = 10,
+                     PATH.topGO = "figures/Fig_4e.pdf",
+                     deg.sig = DEG.sig, 
+                     cols = color.code)
+```
+
+```{r Fig_S4.1d}
+# Fig_S4.1d
+genes_heatmap <- DEG.sig[order(DEG.sig$cell_group, decreasing = F),]$gene_id %>% unique()
+heatmap_data <- exprs(cds)[genes_heatmap, ]
+# be careful about the step of ens-id to gene symbol conversion, the order might be messed up
+rownames(heatmap_data) <- data.annot[rownames(heatmap_data), "gene_short_name"]
+
+cells.ctr <- colnames(cds)[cds$TF %in% c("D0","D0_confluent")]
+Order.pseudotime_1 <- pseudotime(cds)[cells.ctr]
+Order.pseudotime_1 <- Order.pseudotime_1[order(Order.pseudotime_1, decreasing = F)]
+
+# order heatmap_data by pseudotime witin all TF cells
+cells.oi <- colnames(cds)[cds$TF == "Klf4"]
+Order.pseudotime_2 <- pseudotime(cds)[cells.oi]
+Order.pseudotime_2 <- Order.pseudotime_2[order(Order.pseudotime_2, decreasing = F)]
+Order.pseudotime <- c(Order.pseudotime_1,Order.pseudotime_2)
+heatmap_data <- heatmap_data[, names(Order.pseudotime)] 
+
+# prepare annotation for heatmap
+my_sample_col <- cds@colData[,"Dose", drop = F]
+my_sample_col$Pseudotime <- Order.pseudotime[rownames(my_sample_col)]
+my_sample_col$Cluster <- colData(cds)$meta.new 
+
+my_colour = list(
+  Dose = rocket(200, direction = -1),
+  Pseudotime = colorRampPalette(brewer.pal(9, "Blues"))(200),
+  Cluster = c(Control = "lightgrey", '1' = "blue", '3' = "#FF6600") 
+)
+
+heatmap <- pheatmap::pheatmap(as.matrix(heatmap_data),
+                              color = colorRampPalette(c("blue","white","red"))(200),
+                              annotation_col = my_sample_col,
+                              annotation_colors = my_colour,
+                              border_color = NA, 
+                              show_colnames = F, show_rownames = T,
+                              cluster_cols = F, cluster_rows = F, scale = "row", clustering_method = "ward.D2",
+                              annotation_legend = T
+)
+
+ggsave(heatmap, file = "figures/Fig_S4.1d.pdf", width = 8, height = 10)
+```
+
+
+# Figure 4f-h
 
 ```{r}
-p.vector <- plot_cells(cds, color_cells_by = "log_vector", cell_size = 2, show_trajectory_graph = F)+
-  scale_color_continuous(type = "viridis")
-p.TF <- plot_cells(cds, color_cells_by = "TF", cell_size = 2, label_cell_groups = F, show_trajectory_graph = F)+
-  scale_color_manual(values = c("lightgrey","#66cc99")) 
-# c("lightgrey","#996600","#FF9933")
-# blue for Klf4, darkgreen for Grhl2 
-# #9999FF purple-like for Esr2
-# #3399FF blue
-# #cab2d6 purple Myog
-# #b3cde3 Egr1
-# "#7570b3" Meis2
-# #CCCC00 Foxa1
-# 66cc99 Etv1
-p.pseudo <- plot_cells(cds, color_cells_by = "pseudotime", cell_size = 2, show_trajectory_graph = F)
+# re-analysis cells of interest
+cds <- monocle3_reanalysis(tfoi = "Grhl2", data = seu, data.gene_annot = data.annot, num_dims = 30, res = 0.3)
+color.code <- c("lightgrey","green","#FF6600","blue")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","5", "10", "1"))
+names(color.code) <- names(table(cds$meta.new))
 ```
 
+```{r Fig_4f_g}
+plot_dose_clusters(data = cds, 
+                   tfoi = TFoi, 
+                   PATH.UMAP = "figures/Fig_4f.pdf",
+                   PATH.violin = "figures/Fig_4g.pdf",
+                   cols = color.code)
+```
 
+```{r Fig_4h}
+DEG.sig <- Calculate_DE(cds)
+
+Calculate_topGO_plot(data = cds,
+                     num_topGO = 10,
+                     PATH.topGO = "figures/Fig_4h.pdf",
+                     deg.sig = DEG.sig, 
+                     cols = color.code)
+```
+
+# Figure S4.1e (lower panel), f
+
+```{r Fig_S4.1e-lower_f}
+# Egr1
+cds <- monocle3_reanalysis(tfoi = "Egr1", data = seu, data.gene_annot = data.annot, num_dims = 15, res = 0.1)
+color.code <- c("lightgrey","#b3cde3", "orange")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","1", "7"))
+names(color.code) <- names(table(cds$meta.new))
+p_Egr1 <- plot_dose_clusters(data = cds, 
+                             tfoi = TFoi, 
+                             PATH.UMAP = "results/na.pdf",
+                             PATH.violin = "results/na.pdf",
+                             cols = color.code,
+                             output_plot = FALSE)
+p_Egr1
+
+# Esr2
+cds <- monocle3_reanalysis(tfoi = "Esr2", data = seu, data.gene_annot = data.annot, num_dims = 15, res = 0.1)
+
+color.code <- c("lightgrey","green", "#9999FF")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","6", "4"))
+names(color.code) <- names(table(cds$meta.new))
+p_Esr2 <- plot_dose_clusters(data = cds, 
+                             tfoi = TFoi, 
+                             PATH.UMAP = "results/na.pdf",
+                             PATH.violin = "results/na.pdf",
+                             cols = color.code,
+                             output_plot = FALSE)
+p_Esr2
+
+# Etv1
+cds <- monocle3_reanalysis(tfoi = "Etv1", data = seu, data.gene_annot = data.annot, num_dims = 20, res = 0.1)
+color.code <- c("lightgrey","#66cc99", "#CCCC00")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","4", "6"))
+names(color.code) <- names(table(cds$meta.new))
+p_Etv1 <- plot_dose_clusters(data = cds, 
+                             tfoi = TFoi, 
+                             PATH.UMAP = "results/na.pdf",
+                             PATH.violin = "results/na.pdf",
+                             cols = color.code,
+                             output_plot = FALSE)
+p_Etv1
+
+# Figure 4.1e-lower
+ggsave(p_Egr1$umap.cluster+p_Esr2$umap.cluster+p_Etv1$umap.cluster, 
+       file = "figures/Fig_S4.1e-lower.pdf", width = 14, height = 4)
+
+
+# Figure 4.1e-lower
+ggsave(p_Egr1$dose.violin+p_Esr2$dose.violin+p_Etv1$dose.violin, 
+       file = "figures/Fig_S4.1f.pdf", width = 12, height = 4)
+
+```
+
+# Figure S4.2d, e (lower panel), f
+
+```{r Fig_S4.2d_e-lower_f}
+# Meis2
+cds <- monocle3_reanalysis(tfoi = "Meis2", data = seu, data.gene_annot = data.annot, num_dims = 30, res = 0.2)
+color.code <- c("lightgrey","#7570b3", "#cab2d6","#99FF99","#CCCC00")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","5", "9", "8", "3"))
+names(color.code) <- names(table(cds$meta.new))
+p_Meis2 <- plot_dose_clusters(data = cds, 
+                              tfoi = "Meis2", 
+                              PATH.UMAP = "results/na.pdf",
+                              PATH.violin = "results/na.pdf",
+                              cols = color.code,
+                              output_plot = FALSE)
+p_Meis2
+# 	Pairwise comparisons using t tests with pooled SD 
+# 
+# data:  meta.cluster$Dose and meta.cluster$meta.new 
+# 
+#   5       9       8      
+# 9 0.00068 -       -      
+# 8 1.0e-05 0.44412 -      
+# 3 2.7e-08 0.09367 0.27909
+# 
+# P value adjustment method: fdr 
+
+
+# Myog
+cds <- monocle3_reanalysis(tfoi = "Myog", data = seu, data.gene_annot = data.annot, num_dims = 12, res = 0.01)
+color.code <- c("lightgrey","#cab2d6", "#984ea3","#cc99ff")
+cds$meta.new <- factor(cds$meta.new, levels = c("Control","4", "6", "3"))
+names(color.code) <- names(table(cds$meta.new))
+p_Myog <- plot_dose_clusters(data = cds, 
+                              tfoi = "Myog", 
+                              PATH.UMAP = "results/na.pdf",
+                              PATH.violin = "results/na.pdf",
+                              cols = color.code,
+                              output_plot = FALSE)
+p_Myog
+# 	Pairwise comparisons using t tests with pooled SD 
+# 
+# data:  meta.cluster$Dose and meta.cluster$meta.new 
+# 
+#   4       6   
+# 6 1.9e-06 -   
+# 3 1.5e-05 0.46
+# 
+# P value adjustment method: fdr 
+
+
+# Figure 4.1e-lower
+ggsave(p_Meis2$umap.cluster+p_Myog$umap.cluster, 
+       file = "figures/Fig_S4.2d_e-lower.pdf", width = 10, height = 4)
+
+
+# Figure 4.1e-lower
+ggsave(p_Meis2$dose.violin+p_Myog$dose.violin,
+       file = "figures/Fig_S4.2f.pdf", width = 10, height = 4)
+
+```
+
+# Figure S4.2h
+
+```{r Fig_S4.2h}
+cds <- monocle3_reanalysis(tfoi = "Grhl2", data = seu, data.gene_annot = data.annot, num_dims = 30, res = 0.3)
+# learn pseudotime using cells in control clusters as roots
+cds <- learn_graph(cds)
+cds <- order_cells(cds) 
+
+p.pseudo <- plot_cells(cds, color_cells_by = "pseudotime", cell_size = 1, show_trajectory_graph = F)+
+  geom_point(aes(color = cell_color), size = 1, stroke = 1.5)+
+  theme_void()
+p.pseudo
+
+ggsave(p.pseudo, filename = "figures/Fig_S4.2g.pdf", width = 5, height = 3.5)
+```
