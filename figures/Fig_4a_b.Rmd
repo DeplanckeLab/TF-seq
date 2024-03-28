@@ -16,7 +16,7 @@ getwd()
 First, I'm loading the required libraries & functions
 
 ```{r}
-suppressPackageStartupMessages(library(Seurat, lib.loc = "~/.local/share/")) 
+suppressPackageStartupMessages(library(Seurat)) 
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(ggplot2)) 
 suppressPackageStartupMessages(library(cowplot)) 
