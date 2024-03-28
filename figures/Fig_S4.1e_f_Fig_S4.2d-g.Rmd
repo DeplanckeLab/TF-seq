@@ -1,5 +1,5 @@
 ---
-title: "Figure S4.1e,f and S4.2 d-g - reproducibility script"
+title: "Figure S4.1e,f and S4.2 - reproducibility script"
 author: "Wangjie Liu"
 date: "2024-03-20"
 output: html_document
@@ -413,8 +413,7 @@ Calculate_topGO_plot(data = cds,
 # Fig_S4.1d
 genes_heatmap <- DEG.sig[order(DEG.sig$cell_group, decreasing = F),]$gene_id %>% unique()
 heatmap_data <- exprs(cds)[genes_heatmap, ]
-# be careful about the step of ens-id to gene symbol conversion, the order might be messed up
-rownames(heatmap_data) <- data.annot[rownames(heatmap_data), "gene_short_name"]
+rownames(heatmap_data) <- data.annot[rownames(heatmap_data), "gene_symbol"]
 
 cells.ctr <- colnames(cds)[cds$TF %in% c("D0","D0_confluent")]
 Order.pseudotime_1 <- pseudotime(cds)[cells.ctr]
@@ -428,9 +427,9 @@ Order.pseudotime <- c(Order.pseudotime_1,Order.pseudotime_2)
 heatmap_data <- heatmap_data[, names(Order.pseudotime)] 
 
 # prepare annotation for heatmap
-my_sample_col <- cds@colData[,"Dose", drop = F]
-my_sample_col$Pseudotime <- Order.pseudotime[rownames(my_sample_col)]
-my_sample_col$Cluster <- colData(cds)$meta.new 
+my_sample_row <- cds@colData[,"Dose", drop = F] %>% as.data.frame()
+my_sample_row$Pseudotime <- Order.pseudotime[rownames(my_sample_row)]
+my_sample_row$Cluster <- colData(cds)$meta.new 
 
 my_colour = list(
   Dose = rocket(200, direction = -1),
@@ -438,17 +437,18 @@ my_colour = list(
   Cluster = c(Control = "lightgrey", '1' = "blue", '3' = "#FF6600") 
 )
 
-heatmap <- pheatmap::pheatmap(as.matrix(heatmap_data),
+heatmap <- pheatmap::pheatmap(t(as.matrix(heatmap_data)),
                               color = colorRampPalette(c("blue","white","red"))(200),
-                              annotation_col = my_sample_col,
+                              annotation_row = my_sample_row,
                               annotation_colors = my_colour,
                               border_color = NA, 
-                              show_colnames = F, show_rownames = T,
-                              cluster_cols = F, cluster_rows = F, scale = "row", clustering_method = "ward.D2",
-                              annotation_legend = T
-)
+                              show_colnames = T, show_rownames = F,
+                              cluster_cols = F, cluster_rows = F, scale = "column", clustering_method = "ward.D2",
+                              annotation_legend = T)
+heatmap
 
-ggsave(heatmap, file = "figures/Fig_S4.1d.pdf", width = 8, height = 10)
+ggsave(heatmap, file = "figures/Fig_S4.1d.pdf", width = 12, height = 3)
+
 ```
 
 
@@ -610,3 +610,18 @@ p.pseudo
 
 ggsave(p.pseudo, filename = "figures/Fig_S4.2g.pdf", width = 5, height = 3.5)
 ```
+
+# Figure S4.2a-c
+
+```{r}
+# reanalysis of Runx2
+TFoi <- "Runx2"
+seu.oi <- subset(seu, TF %in% c("D0","D0_confluent","Runx2"))
+```
+
+# 
+
+```{r}
+
+```
+
