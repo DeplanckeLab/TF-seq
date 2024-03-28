@@ -287,6 +287,69 @@ Calculate_topGO_plot <- function(data, num_topGO = 10, PATH.topGO, deg.sig, cols
 
   ggsave(p_GOenrich, file = PATH.topGO, width = 12, height = 6)
 } 
+
+# DE analysis and heatmap for Runx2 branching analysis
+Runx2_DE_heatmap <- function(data.seu, data.gene_annot){
+  DefaultAssay(data.seu) <- "RNA"
+  
+  # as no obvious batch effect was observed among Runx2 cells, used FindMarkers directly
+  # high Runx2 vs low Runx2
+  DEGs <- FindMarkers(data.seu, ident.1 = "high_Runx2",ident.2 = "low_Runx2", min.pct = 0.25, logfc.threshold = 0.25 )
+  DEGs$pct.diff <- abs(DEGs$pct.1 - DEGs$pct.2)
+  DEGs$gene <- data.gene_annot[rownames(DEGs), "gene_symbol"]
+  DEGs <- DEGs[DEGs$p_val_adj < 0.05 & DEGs$pct.diff > 0.1,] # 0.1
+  # high Runx2 vs control
+  DEGs.high_VS_ctr <- FindMarkers(data.seu, ident.1 = "high_Runx2",ident.2 = "Control", min.pct = 0.25, logfc.threshold = 0.25 )
+  DEGs.high_VS_ctr$pct.diff <- abs(DEGs.high_VS_ctr$pct.1 - DEGs.high_VS_ctr$pct.2)
+  DEGs.high_VS_ctr$gene <- data.gene_annot[rownames(DEGs.high_VS_ctr), "gene_symbol"]
+  DEGs.high_VS_ctr <- DEGs.high_VS_ctr[DEGs.high_VS_ctr$p_val_adj < 0.05 & DEGs.high_VS_ctr$pct.diff > 0.5,]
+  # low Runx2 vs control
+  DEGs.low_VS_ctr <- FindMarkers(data.seu, ident.1 = "low_Runx2",ident.2 = "Control", min.pct = 0.25, logfc.threshold = 0.25 )
+  DEGs.low_VS_ctr$pct.diff <- abs(DEGs.low_VS_ctr$pct.1 - DEGs.low_VS_ctr$pct.2)
+  DEGs.low_VS_ctr$gene <- data.gene_annot[rownames(DEGs.low_VS_ctr), "gene_symbol"]
+  DEGs.low_VS_ctr <- DEGs.low_VS_ctr[DEGs.low_VS_ctr$p_val_adj < 0.05 & DEGs.low_VS_ctr$pct.diff > 0.25,]
+  
+  # take overlapped DE genes, which varied between high and low Runx2 cells but also between them and control
+  genes.heatmap <- intersect(rownames(DEGs), unique(c(rownames(DEGs.low_VS_ctr), rownames(DEGs.high_VS_ctr))))
+  
+  # if check also endogeneous Runx2 expression (basal level)
+  # genes.heatmap <- c(genes.heatmap, data.gene_annot[data.gene_annot$gene_symbol == "Runx2","ensembl_id"])
+  cds <- GetAssayData(data.seu, assay = "RNA", slot = "data")
+  heatmap_data <- cds[genes.heatmap,]
+  rownames(heatmap_data) <- data.gene_annot[rownames(heatmap_data), "gene_symbol"]
+  
+  # order by Runx2 dose
+  Order.byDose <- data.seu$Dose
+  Order.byDose <- Order.byDose[order(Order.byDose, decreasing = F)] %>% names()
+  heatmap_data <- heatmap_data[, Order.byDose]
+  
+  # prepare annotation and color scheme
+  my_sample_col <- data.seu@meta.data[,"Runx2_dose", drop = F]
+  my_sample_col$Dose <- data.seu$Dose
+  
+  my_colour = list(
+    Runx2_dose = c(Control = "lightgrey", low_Runx2 = "#FF9933", high_Runx2 = "#996600"),
+    Dose = rocket(200, direction = -1)
+  )
+  
+  # plot gene expression as heatmap
+  heatmap <- pheatmap::pheatmap(as.matrix(heatmap_data),
+                                color = colorRampPalette(c("blue","white","red"))(200),
+                                annotation_col = my_sample_col,
+                                annotation_colors = my_colour,
+                                border_color = NA, 
+                                show_colnames = F, show_rownames = T,
+                                cluster_cols = F, cluster_rows = T, 
+                                scale = "row", 
+                                clustering_method = "ward.D2",
+                                annotation_legend = T
+  )
+  
+  Output <- list(genes.heatmap, heatmap_data, heatmap)
+  names(Output) <- c("genes.heatmap", "heatmap_data","heatmap_plot")
+  return(Output)
+}
+
 ```
 
 ## read the functional TF atlas in G1 (default phase)
@@ -611,17 +674,64 @@ p.pseudo
 ggsave(p.pseudo, filename = "figures/Fig_S4.2g.pdf", width = 5, height = 3.5)
 ```
 
-# Figure S4.2a-c
+# Figure S4.2a-c branching analysis for Runx2
 
-```{r}
-# reanalysis of Runx2
+```{r Fig_S4.2a-c}
 TFoi <- "Runx2"
-seu.oi <- subset(seu, TF %in% c("D0","D0_confluent","Runx2"))
+
+# subset to Runx2 cells + batch-paired control
+batch.oi <- table(seu$batch[seu$TF == TFoi]) %>% names()
+seu.oi <- subset(seu, TF %in% c("D0", "D0_confluent", TFoi) & batch %in% batch.oi)
+
+# group Runx2 cells based on dose cutoff
+summary(seu.oi$Dose[seu.oi$TF == TFoi])
+ #   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ # 0.6931  1.6094  2.3979  2.4736  3.2581  6.1821 
+seu.oi$Runx2_dose <- seu.oi$TF
+seu.oi$Runx2_dose[seu.oi$TF != "Runx2"] <- "Control"
+seu.oi$Runx2_dose[seu.oi$TF == "Runx2" & seu.oi$Dose >= 2.5] <- "high_Runx2"
+seu.oi$Runx2_dose[seu.oi$TF == "Runx2" & seu.oi$Dose < 2.5] <- "low_Runx2"
+seu.oi$Runx2_dose <- factor(seu.oi$Runx2_dose, levels = c("Control","low_Runx2","high_Runx2"))
+Idents(seu.oi) <- "Runx2_dose"
+
+
+# re-run UMAP on integrated assay
+DefaultAssay(seu.oi) <- "integrated"
+set.seed(10)
+seu.oi <- seu.oi %>% RunPCA(npcs = 50) %>% RunUMAP(dims = 1:50)
+
+
+# Figure S4.2a
+p_dose <- FeaturePlot(seu.oi, features = "Dose", order = T)+scale_color_viridis()+
+    theme(axis.line = element_blank(), 
+    panel.grid.major=element_blank(), 
+    panel.grid.minor=element_blank(), 
+    axis.text=element_blank(), 
+    axis.ticks=element_blank(), 
+    plot.background=element_blank(), 
+    panel.background=element_blank())+
+    xlab(label = "") + ylab(label = "")+
+  labs(title = paste0(TFoi," dose"))
+p_dose
+ggsave(p_dose, filename = "figures/Fig_S4.2a.pdf", width = 6, height = 5)
+
+# Figure S4.2b
+p_group <- DimPlot(seu.oi, group.by = "Runx2_dose", cols = c("lightgray", "#FF9933","#996600"))+
+    theme(axis.line = element_blank(), 
+    panel.grid.major=element_blank(), 
+    panel.grid.minor=element_blank(), 
+    axis.text=element_blank(), 
+    axis.ticks=element_blank(), 
+    plot.background=element_blank(), 
+    panel.background=element_blank())+
+    xlab(label = "") + ylab(label = "")+
+  labs(title = TFoi)
+p_group
+ggsave(p_group, filename = "figures/Fig_S4.2b.pdf", width = 7, height = 5)
+
+# Figure S4.2c
+final_output <- Runx2_DE_heatmap(data.seu = seu.oi, data.gene_annot = data.annot) 
+final_output$heatmap_plot
+ggsave(final_output$heatmap_plot, filename = "figures/Fig_S4.2c.pdf", width = 6.5, height = 5)
+
 ```
-
-# 
-
-```{r}
-
-```
-
