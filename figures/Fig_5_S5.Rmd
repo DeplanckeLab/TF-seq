@@ -1,0 +1,358 @@
+---
+title: "Figure 5 and S5 - reproducibility script"
+author: "Wangjie Liu"
+date: "2024-04-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./")
+getwd()
+```
+
+## Libraries & functions
+
+First, I'm loading the required libraries & functions
+
+```{r}
+suppressPackageStartupMessages(library(Seurat)) 
+suppressPackageStartupMessages(library(ggplot2)) 
+suppressPackageStartupMessages(library(cowplot))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(Hmisc))
+suppressPackageStartupMessages(library(ggdensity))
+suppressPackageStartupMessages(library(ggExtra))
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(viridis))
+suppressPackageStartupMessages(library(ks))
+suppressPackageStartupMessages(library(crayon))
+
+cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
+cat(bold("ggplot2"), "version", as.character(packageVersion("ggplot2")), "\n")
+cat(bold("cowplot"), "version", as.character(packageVersion("cowplot")), "\n")
+cat(bold("tidyverse"), "version", as.character(packageVersion("tidyverse")), "\n")
+cat(bold("Hmisc"), "version", as.character(packageVersion("Hmisc")), "\n")
+cat(bold("ggdensity"), "version", as.character(packageVersion("ggdensity")), "\n")
+cat(bold("ggExtra"), "version", as.character(packageVersion("ggExtra")), "\n")
+cat(bold("data.table"), "version", as.character(packageVersion("data.table")), "\n")
+cat(bold("viridis"), "version", as.character(packageVersion("viridis")), "\n")
+cat(bold("ks"), "version", as.character(packageVersion("ks")), "\n")
+
+# Seurat version 4.4.0 
+# ggplot2 version 3.5.0 
+# cowplot version 1.1.3
+# tidyverse version 2.0.0 
+# Hmisc version 5.1.2 
+# ggdensity version 1.0.0 
+# ggExtra version 0.10.1 
+# data.table version 1.15.2 
+# viridis version 0.6.5 
+# ks version 1.14.2 
+
+# customize Ggplot2Theme
+mashaGgplot2Theme <- list(
+  theme_classic(base_size = 14) + 
+    theme(text = element_text(size = 14)) +
+    theme(axis.line.x = element_line(colour = 'black', size = 0.5,
+                                     linetype = 'solid'),
+          axis.line.y = element_line(colour = 'black', size=0.5,
+                                     linetype ='solid'),
+          panel.grid.minor = element_line(colour = "white", size = 0.5,
+                                          linetype = 2))
+)
+
+# calculate the number, proportion of each cell cycle phase, and perform fisher exact test followed by FDR correction
+barplot_TopCyclingTF <- function(data, Phase.select, q_value_threshold = 0.25, plot_only_significant = TRUE){ 
+  # quality control: filter out TFs with less than 50 cells 
+  TF.filter <- table(data$TF)[table(data$TF) > 50] %>% names()
+  data <- data[data$TF %in% TF.filter,]
+  
+  # calculate the number and proportion of cells in each cell cycle phase
+  df_PhaseperTF <- reshape2::melt(table(data$TF, data[[Phase.select]]))
+  df_PhaseperTF$Fraction <- apply(df_PhaseperTF, 1, 
+                                  function(x) return(as.numeric(x["value"])/sum(data$TF == x["Var1"])))
+  colnames(df_PhaseperTF) <- c("TF", "Phase", "Counts", "Fraction")
+  df_PhaseperTF <- as.data.frame(df_PhaseperTF)
+  TFoi <- unique(df_PhaseperTF$TF) %>% as.character()
+
+  # add total number of cells as label for each TF
+  df_PhaseperTF.sub <- lapply(TFoi, function(x){
+    df_PhaseperTF.sub <- subset(df_PhaseperTF, TF == x)
+    df_PhaseperTF.sub$Total_nCell <- sum(df_PhaseperTF.sub$Counts)
+    df_PhaseperTF.sub$label <- paste0(x, " (", df_PhaseperTF.sub$Total_nCell, ")")
+    return(df_PhaseperTF.sub)
+  })
+  df_PhaseperTF <- data.table::rbindlist(df_PhaseperTF.sub)
+  df_PhaseperTF$TF <- as.factor(df_PhaseperTF$TF)
+  
+  # Fisher exact test
+  TFois <- TF.filter[TF.filter != "Ctr.conf"]
+  P_values <- lapply(TFois, function(x){
+    df.TFoi <- subset(df_PhaseperTF, TF %in% c(x,"Ctr.conf"))
+    df.TFoi$Counts <- as.numeric(df.TFoi$Counts)
+    df.test <- data.frame(TF = c("Ctr.conf", x),
+                          G1 = c(df.TFoi$Counts[df.TFoi$TF == "Ctr.conf" & df.TFoi$Phase == "G1"], df.TFoi$Counts[df.TFoi$TF == x & df.TFoi$Phase == "G1"]),
+                          G2MS =  c(sum(df.TFoi$Counts[df.TFoi$TF == "Ctr.conf" & df.TFoi$Phase %in% c("G2M", "S")]), sum(df.TFoi$Counts[df.TFoi$TF == x & df.TFoi$Phase %in% c("G2M","S")]))
+                          )
+    rownames(df.test) <- df.test$TF
+    df.test$TF <-NULL
+    df.test <- as.matrix(df.test)
+    print(fisher.test(df.test))
+    p.value <- data.frame(TF = x, p.value = fisher.test(df.test)$p.value, odds_ratio = fisher.test(df.test)$estimate["odds ratio"], Side = fisher.test(df.test)$alternative)
+    rownames(p.value) <- x
+    return(p.value)
+  })
+  names(P_values) <- TFois
+  P_values <- data.table::rbindlist(P_values)
+  P_values$q.value <- p.adjust(P_values$p.value, method = "fdr") # fdr = BH
+  P_values$significant <- F
+  P_values$significant[P_values$q.value < q_value_threshold] <- T # FDR-corrected p value
+  P_values$significant <- as.factor(P_values$significant)
+  
+  # add significance information in data frame for plotting
+  df_PhaseperTF$is.significant <- F
+  df.new <- lapply(TFois, function(x){
+    df.TFoi <- subset(df_PhaseperTF, TF == x)
+    df.TFoi$is.significant <- rep(P_values$significant[P_values$TF == x], 3)
+    return(df.TFoi)
+  })
+  names(df.new) <- TFois
+  df.new <- data.table::rbindlist(df.new) %>% as.data.frame()
+  df.new <- rbind(df.new, df_PhaseperTF[df_PhaseperTF$TF == "Ctr.conf",])
+  df.new$TF <- as.factor(df.new$TF)
+  df.new$is.significant <- as.factor(df.new$is.significant)
+  
+  #Reorder from highest sum of cycling cells 
+  cyclingFreq <- subset(df.new, Phase %in% c("S", "G2M"))
+  ord <- as.data.frame(cyclingFreq %>% group_by(label) %>% summarise(SumCyclingFreq = sum(Fraction)))
+  ord <- ord[order(ord$SumCyclingFreq, decreasing = T),]
+  
+  df.new$label <- as.character(df.new$label)
+  df.new$label <- factor(df.new$label, levels = ord$label) #names(ord) if use lapply
+  df.new$is.significant <- factor(df.new$is.significant)
+  cols <- ifelse(df.new$is.significant == T, "darkred","black")
+  names(cols) <- df.new$label
+  
+  rownames(ord) <- ord$label
+  ord$col <- cols[rownames(ord)] %>% as.factor()
+  cols <- ord$col
+  
+  if (plot_only_significant == T){
+    df.new <- df.new[df.new$is.significant == T | df.new$TF == "Ctr.conf" , ]
+    p_h <- ggplot(df.new, aes(x = label, y = Fraction)) + 
+      geom_bar(mapping = aes(fill = Phase, alpha = Phase), position="stack", stat="identity") + 
+      scale_fill_manual(values = c("lightgrey", "#a6cee3", "#1f78b4")) + 
+      scale_alpha_manual(values = c(0.2,1,1)) +
+      mashaGgplot2Theme + 
+      theme(
+        axis.text.x = element_text(size = 9, angle = 45, colour = "black", vjust = 0.9, hjust = 0.9),
+        panel.grid.major.y = element_line(size = 0.1, color = "grey"),
+        legend.position = "left")
+  } else {
+    p_h <- ggplot(df.new, aes(x = label, y = Fraction)) + 
+      geom_bar(mapping = aes(fill = Phase, alpha = Phase), position="stack", stat="identity") + 
+      scale_fill_manual(values = c("lightgrey", "#a6cee3", "#1f78b4")) + 
+      scale_alpha_manual(values = c(0.2,1,1)) +
+      mashaGgplot2Theme + 
+      theme(
+        axis.text.x = element_text(size = 9, colour = cols, angle = 45, vjust = 0.9,  hjust = 0.9 ),
+        panel.grid.major.y = element_line(size = 0.1, color = "grey"),
+        legend.position = "left") 
+    
+  }
+
+  P <- list(p_h, P_values, df.new)
+  names(P) <- c("p_h","P_values","df_plot")
+  return(P)
+}
+
+# 1-D density plot for S and G2M scores for TF of interest
+Plot_1D_density <- function(TFoi, data, Ctr_to_use = "Ctr.conf"){
+  plotdata <- data[data$TF %in% c(Ctr_to_use,TFoi),]
+  plotdata$TF <- factor(plotdata$TF, levels = c(Ctr_to_use,TFoi))
+  cols <- c("#19BCC1","#F2756D")
+  names(cols) <- c(Ctr_to_use, TFoi)
+  #S score for all phase cells
+  p1 <- ggplot(plotdata)+
+    geom_density(aes(x = S.Score, col = TF), position = "identity")+
+    labs(x = "S.Score", y = "density")+
+    scale_color_manual(values = cols)+
+    theme_cowplot()
+  #G2M score for all phase cells
+  p2 <- ggplot(plotdata)+
+    geom_density(aes(x = G2M.Score, col = TF), position = "identity")+
+    labs(x = "G2M.Score", y = "density")+
+    scale_color_manual(values = cols)+
+    theme_cowplot()
+  return(p1+p2)
+}
+
+
+## perform statistical test on cell cycle scores of two groups
+Pvalue.WILCOX_TEST <- function(TFoi, data, Ctr_to_use = "Ctr.conf"){
+  X1.S <- data[data$TF == TFoi, c("S.Score")] 
+  X2.S <- data[data$TF == Ctr_to_use, c("S.Score")] 
+  pvalue.S <- wilcox.test(X1.S, X2.S)$p.value
+  X1.G2M <- data[data$TF == TFoi, c("G2M.Score")] 
+  X2.G2M <- data[data$TF == Ctr_to_use, c("G2M.Score")] 
+  pvalue.G2M <- wilcox.test(X1.G2M, X2.G2M)$p.value
+  df.pvalues <- data.frame(TF = TFoi, pvalue.wilcox_S = pvalue.S, pvalue.wilcox_G2M = pvalue.G2M)
+  return(df.pvalues)
+}
+
+# calculate and plot the fraction of cycling cells for binned TF dose
+plot_fraction_per_dose_bin <- function(tfoi, seu, n_bins = 5, phase){
+  seu.oi <- subset(seu, TF %in% c(tfoi, "Ctr.conf") )
+
+  plotdata.density <- FetchData(seu.oi, vars = c("TF", phase, "Dose"))
+  plotdata.density$dosage_bin <- cut(plotdata.density$Dose, 
+                                     breaks = c(-Inf, log1p(1), seq(log1p(1), max(plotdata.density$Dose), length.out = n_bins)[-1]), 
+                                     include.lowest = T,
+                                     right = F)
+  
+  plotdata.density$is.CC_phase <- plotdata.density[[phase]]
+
+  plotdata.density <- plotdata.density %>% 
+    group_by(dosage_bin) %>%
+    mutate(nCell_total = n()) %>%
+    mutate(mean_dose = round(mean(Dose), digits = 1)) %>%
+    ungroup(dosage_bin) %>%
+    group_by(dosage_bin, is.CC_phase) %>%
+    mutate(nCell = n())
+  print(table(plotdata.density$mean_dose))
+  plotdata.density$Fraction_cc <- plotdata.density$nCell/plotdata.density$nCell_total
+
+  plotdata.density$is.CC_phase <- factor(plotdata.density$is.CC_phase, levels = c("G1","G2M","S"))
+
+  plotdata.density <- plotdata.density[, c("dosage_bin","Fraction_cc","is.CC_phase","nCell_total","mean_dose")]
+  plotdata.density <- plotdata.density[!duplicated(plotdata.density),]
+  
+  # if there are less than 9 total cells in a bin, set that dose bin to NA/empty
+  df.nCell.bin <- plotdata.density[,c("dosage_bin","Fraction_cc","nCell_total", "mean_dose")]
+  df.nCell.bin <- df.nCell.bin[!duplicated(df.nCell.bin),]
+  bins_fewCells <- df.nCell.bin$dosage_bin[df.nCell.bin$nCell_total <9]
+
+  plotdata.density$Fraction_cc[plotdata.density$dosage_bin %in% bins_fewCells] <- NA
+  
+  plotdata.density$mean_dose <- as.factor(plotdata.density$mean_dose)
+  p.fraction <- ggplot(plotdata.density, mapping = aes(x = mean_dose, y = Fraction_cc, fill = is.CC_phase))+
+    geom_bar( position = "stack", stat = "identity")+
+    scale_fill_manual(values = c("gray90", "#a6cee3","#1f78b4"))+
+    theme_cowplot()+
+    labs(title = tfoi)
+  p.fraction
+  return(p.fraction)
+}
+```
+
+## read the atlas and rename control cells to Ctr.non.conf and Ctr.conf
+
+```{r}
+seu <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
+seu$TF[seu$TF == "D0"] <- "Ctr.non.conf"
+seu$TF[seu$TF == "D0_confluent"] <- "Ctr.conf"
+```
+
+## exclude TF pairs, Adipo_ref and Myo_ref 
+
+```{r}
+seu <- subset(seu, TF %nin% c("Pparg-Runx2",
+                              "Mycn-Runx2",
+                              "Mycn-Myog",
+                              "Mycn-Pparg",
+                              "Cebpa-Mycn",
+                              "Cebpa-Myog",
+                              "Cebpa-Pparg",
+                              "Adipo_ref",
+                              "Myo_ref"))
+```
+
+## prepare cell cycle metadata
+
+```{r}
+cc.meta <- seu@meta.data[, c("TF","Dose","Phase","Phase_corrected","S.Score","G2M.Score")]
+```
+
+# Figure 5b
+
+```{r Fig_5b}
+P_ALLCells <- barplot_TopCyclingTF(data = cc.meta, 
+                                   Phase.select = "Phase_corrected",
+                                   q_value_threshold = 0.25,
+                                   plot_only_significant = TRUE) 
+P_ALLCells$p_h
+ggsave(P_ALLCells$p_h, height = 4, width = 10, # height = 10, width = 4.79,
+         filename = "figures/Fig_5b.pdf")
+```
+
+# Figure S5a
+
+```{r Fig_S5a}
+P_ALLCells <- barplot_TopCyclingTF(data = cc.meta, 
+                                   Phase.select = "Phase",
+                                   q_value_threshold = 0.25,
+                                   plot_only_significant = TRUE) 
+P_ALLCells$p_h
+ggsave(P_ALLCells$p_h, height = 4, width = 15, # height = 10, width = 4.79,
+         filename = "figures/Fig_S5a.pdf")
+```
+
+# Figure 5c
+
+```{r Fig_5c}
+TFois <- c("T","E2f2","Mycn")
+p_1d_density <- lapply(TFois, function(x) Plot_1D_density(TFoi = x, data = cc.meta, Ctr_to_use = "Ctr.conf"))
+
+pdf("figures/Fig_5c.pdf", width = 7.5, height = 4)
+for (i in 1:length(TFois)){
+  print(p_1d_density[[i]])
+}
+dev.off()
+
+```
+
+# Wilcox test for all TFs and adjusted p value for Figure 5c
+
+```{r}
+### wilcox test on cellcyclescore
+df.pvalues_wilcox <- lapply(TFois[TFois!= "Ctr.conf"], function(x) Pvalue.WILCOX_TEST(TFoi = x, data = cc.meta, Ctr_to_use = "Ctr.conf"))
+df.pvalues_wilcox <- rbindlist(df.pvalues_wilcox)
+df.pvalues_wilcox$padj.wilcox_S <- p.adjust(df.pvalues_wilcox$pvalue.wilcox_S, method = "fdr")
+df.pvalues_wilcox$padj.wilcox_G2M <- p.adjust(df.pvalues_wilcox$pvalue.wilcox_G2M, method = "fdr")
+print(df.pvalues_wilcox)
+
+```
+
+# Figure 5d
+
+```{r Fig_5d}
+TFois <- c("T","E2f2","Mycn")
+p_fract_bin <- lapply(TFois, function(x) plot_fraction_per_dose_bin(x, seu, n_bins = 5, phase = "Phase_corrected"))
+pdf("figures/Fig_5d.pdf", width = 18, height = 5)
+marrangeGrob(p_fract_bin, ncol = 3, nrow = 1)
+dev.off()
+```
+
+# Figure S5h
+
+```{r Fig_S5h}
+TFois <- c("Runx2","Pax9")
+p_fract_bin <- lapply(TFois, function(x) plot_fraction_per_dose_bin(x, seu, n_bins = 5, phase = "Phase_corrected"))
+pdf("figures/Fig_S5h.pdf", width = 14, height = 5)
+marrangeGrob(p_fract_bin, ncol = 2, nrow = 1)
+dev.off()
+```
+
+# Figure S5b, c
+
+```{r Fig_S5b_c}
+
+```
+
+# Figure S5d-g
+
+```{r Fig_S5d-g}
+
+```
+
