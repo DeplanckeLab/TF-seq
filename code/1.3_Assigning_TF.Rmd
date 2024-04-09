@@ -318,7 +318,7 @@ rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
 ```
 
 
-## Kneepoint algo for exp12-13 - enriched
+## Kneepoint also for exp12-13 - enriched
 
 ```{r}
 filtering_kneepoint_combination(
