@@ -105,6 +105,7 @@ data.seurat$batch_overall[data.seurat$batch %in% c("exp07","exp08")] <- "batch2"
 data.seurat$batch_overall[data.seurat$batch %in% c("exp09")] <- "batch3" 
 data.seurat$batch_overall[data.seurat$batch %in% c("exp10","exp11")] <- "batch4" 
 data.seurat$batch_overall[data.seurat$batch %in% c("exp12-13")] <- "batch5" 
+data.seurat$batch_overall[data.seurat$batch %in% c("exp14")] <- "batch6" 
 table(data.seurat$batch_overall)
 
 # Fixing metadata
@@ -124,7 +125,7 @@ num_cores <- 32
 
 # I will proceed each phase, each batch, each TF separately
 allPhases <- c("G1","S","G2M")
-allBatches <- c("batch1","batch2","batch3","batch4","batch5")
+allBatches <- allBatches <- as.character(unique(data.seurat$batch_overall))
 allTFs <- as.character(unique(data.seurat$TF))
 allTFs <- allTFs[!allTFs %in% c("D0", "D0_confluent", "Adipo_ref", "Myo_ref")]
 message("There are ", length(allTFs), " TFs to process")
