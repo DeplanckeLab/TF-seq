@@ -16,7 +16,7 @@ Therefore, a typical run output two libraries:
 Here we follow standard protocols. We only add a trimming step before, using cutadapt, to get rid of TSO adapters and polyA fragments. The complete code is thus as follows:
 
 ```bash
-cutadapt -m 20 -G ^AAGCAGTGGTATCAACGCAGAGTACATGGG -B "A{150}" -o tfseq_trimmed_L001_R1_001.fastq -p tfseq_trimmed_L001_R2_001.fastq tfseq_L001_R1_001.fastqz $tfseq_L001_R2_001.fastqz
+cutadapt -m 20 -G ^AAGCAGTGGTATCAACGCAGAGTACATGGG -B "A{150}" -o tfseq_trimmed_L001_R1_001.fastq -p tfseq_trimmed_L001_R2_001.fastq $tfseq_L001_R1_001.fastq.gz $tfseq_L001_R2_001.fastq.gz
 
 gzip tfseq_trimmed_L001_R1_001.fastq
 gzip tfseq_trimmed_L001_R2_001.fastq
