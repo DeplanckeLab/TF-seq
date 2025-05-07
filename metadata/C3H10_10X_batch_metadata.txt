@@ -1,0 +1,10 @@
+C3H10_10X_exp	Batch
+exp05	1
+exp06	2
+exp07	3
+exp08	4
+exp09	5
+exp10	6
+exp11	7
+exp12_13	8
+exp14	9
