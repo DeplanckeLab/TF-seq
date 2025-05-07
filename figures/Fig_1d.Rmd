@@ -1,7 +1,7 @@
 ---
 title: "Figure 1d - Reproducibility script"
 author: "Wangjie Liu / Vincent Gardeux"
-date: "2024/01/24"
+date: "2024/11/01"
 output:
   html_document:
     df_print: paged
@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "/data/gardeux/TF-seq_proper/")
+knitr::opts_knit$set(root.dir = "./")
 getwd()
 ```
 
@@ -28,8 +28,8 @@ cat(bold("readxl"), "version", as.character(packageVersion("readxl")), "\n")
 cat(bold("plyr"), "version", as.character(packageVersion("plyr")), "\n")
 
 # color scheme
-cols <- c("#8DA0CB", "#E78AC3", "#A6D854","#FFD92F","#E5C494", "#66C2A5", "#FC8D62", "#FFCCCC")
-names(cols) <- c("exp05", "exp06", "exp07", "exp08", "exp09", "exp10", "exp11", "exp12-13")
+cols <- c("#2E2591", "#338935", "#5DA899", "#7E2954", "#9F4A96", "#94CBE8", "#E69F00", "#DCC07D", "#C26A76")
+names(cols) <- c("exp05", "exp06", "exp07", "exp08", "exp09", "exp10", "exp11", "exp12-13","exp14")
 
 # Summary function to compute mean and sd
 summary_func <- function(x, col){
