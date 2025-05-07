@@ -1,7 +1,7 @@
 ---
 title: "Filtering of TF-seq data"
-author: "Vincent Gardeux"
-date: "2023/11/23"
+author: "Vincent Gardeux / Wangjie Liu"
+date: "2024/06/19"
 output:
   html_document:
     df_print: paged
@@ -15,10 +15,11 @@ getwd()
 
 ## Libraries & functions
 
+
 First, I'm loading the required libraries & functions
 
 ```{r}
-suppressPackageStartupMessages(library(Seurat)) # For handling 10x h5 file
+suppressPackageStartupMessages(library(Seurat, lib.loc = "~/.local/share/")) # For handling 10x h5 file
 suppressPackageStartupMessages(library(data.table)) # For fread/fwrite functions
 suppressPackageStartupMessages(library(SamSPECTRAL)) # For the kneepoint algorithm
 suppressPackageStartupMessages(library(scater)) # isOutlier function
@@ -66,14 +67,40 @@ filtering_kneepoint <- function(exp_cellranger, exp_tf_cell, exp_out_seurat){
   # Knee point cutoff detection
   TFsBC.MaxRate.cutoff_order <- TFsBC.MaxRate.cutoff[order(TFsBC.MaxRate.cutoff, decreasing = T)] # order from 1 to 0 
   cutoff <- kneepointDetection(TFsBC.MaxRate.cutoff_order)
-
+  message(TFsBC.MaxRate.cutoff_order[cutoff$MinIndex], " is the cutoff from kneepointDectection.")
+  
   # Count how many cells are passing the filtering
   filtered_barcodes <- common.barcodes[TFs.MaxRate > TFsBC.MaxRate.cutoff_order[cutoff$MinIndex] & nCounts > 5]
   message(length(filtered_barcodes), " cells are passing the kneepoint filtering")
   
+  
+  # Calculate rate of main and second TF using Rfast package
+  all.top2 <- colnth(as.matrix(data.tf_read), rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 2)
+  first.indexes <- colnth(as.matrix(data.tf_read), index.return = T, rep(1,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+  second.indexes <- colnth(as.matrix(data.tf_read), index.return = T, rep(2,ncol(data.tf_read)), descending = T, num.of.nths = 1) # Can't do both?
+  
+  # Prepare output dataframe with rate of main and second TF
+  data.tf_read.top2 <- data.frame(matrix(nrow = ncol(data.tf_read), ncol = 6), row.names = colnames(data.tf_read))
+  colnames(data.tf_read.top2) <- c("TFmax", "TFmax.rate", "nMax", "TF2nd", "TF2nd.rate", "n2nd")
+  
+  # Fill it
+  data.tf_read.top2$nMax <- all.top2[1,]
+  data.tf_read.top2$TFmax.rate <- data.tf_read.top2$nMax / nCounts
+  data.tf_read.top2$n2nd <- all.top2[2,]
+  data.tf_read.top2$TF2nd.rate <- data.tf_read.top2$n2nd / nCounts
+  data.tf_read.top2$TFmax <- rownames(data.tf_read)[first.indexes]
+  data.tf_read.top2$TF2nd <- rownames(data.tf_read)[second.indexes]
+  
+  # filter out potential doublet cells (TF1+TF2) having more than 50 reads of the second detected TF
+  filtered_barcodes <- intersect(filtered_barcodes, rownames(data.tf_read.top2)[data.tf_read.top2$n2nd <= 50]) 
+  message(length(filtered_barcodes), " cells are passing the kneepoint filtering and TF1+TF2 doublet filtering")
+    
   # Subset cell_ranger matrix
   data.seurat <- data.seurat[,filtered_barcodes]
   data.tf_read <- data.tf_read[,filtered_barcodes]
+  
+  # Order the cell barcodes to match the 10x and TF enrich matrix
+  data.tf_read <- data.tf_read[, colnames(data.seurat)]
   
   # Assign TFs
   TF <- c()
@@ -81,7 +108,7 @@ filtering_kneepoint <- function(exp_cellranger, exp_tf_cell, exp_out_seurat){
   for(i in 1:ncol(data.tf_read)){
     TF <- c(TF, rownames(data.tf_read)[data.tf_read[,i] == max(data.tf_read[,i])])
   }
-  
+
   # Add to Seurat Object
   data.seurat$TF <- TF
 
@@ -176,7 +203,7 @@ filtering_kneepoint_combination <- function(exp_cellranger, exp_tf_cell, exp_com
   data.seurat <- data.seurat[,rownames(data.tf_read.top2)]
   
   # Assign TFs to Seurat Object
-  data.seurat$TF <- data.tf_read.top2$TF
+  data.seurat$TF <- data.tf_read.top2[colnames(data.seurat),]$TF
   sum(table(data.seurat$TF))
   
   message(ncol(data.seurat), " cells are passing the kneepoint filtering")
@@ -297,7 +324,7 @@ rm(TF_EXP12, TF_EXP13, TF_EXP12_13)
 TF_EXP12 <- fread("results/C3H10_10X_exp12_enriched.umi_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
 # Adding back the '-1', since some cell barcodes are the same between exp12 and exp13
 colnames(TF_EXP12)[3:ncol(TF_EXP12)] <- paste0(colnames(TF_EXP12)[3:ncol(TF_EXP12)], "-1")
-message(ncol(TF_EXP12) - 2, " cells in exp12 TF matrix")
+message(ncol(TF_EXP12) - 1, " cells in exp12 TF matrix")
 
 # Reading exp13
 TF_EXP13 <- fread("results/C3H10_10X_exp13_enriched.umi_matrix.txt", header = T, stringsAsFactors = F, data.table = F)
@@ -326,5 +353,15 @@ filtering_kneepoint_combination(
   exp_tf_cell = "results/C3H10_10X_exp12-13_enriched.read_matrix.txt",
   exp_combination_list = "metadata/C3H10_10X_Metadata_exp12-13_combination.txt",
   exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
+```
+
+## # Exp14
+
+```{r}
+filtering_kneepoint(
+  exp_cellranger = "cellranger/C3H10_10X_exp14_filtered_feature_bc_matrix.h5",
+  exp_tf_cell = "results/C3H10_10X_exp14_enriched.read_matrix.txt",
+  exp_out_seurat = "results/C3H10_10X_exp14_enriched.cellranger_kneepoint.rds"
+)
 ```
 
