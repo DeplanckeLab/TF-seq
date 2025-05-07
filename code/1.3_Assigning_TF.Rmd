@@ -355,7 +355,7 @@ filtering_kneepoint_combination(
   exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds")
 ```
 
-## # Exp14
+# Exp14
 
 ```{r}
 filtering_kneepoint(
