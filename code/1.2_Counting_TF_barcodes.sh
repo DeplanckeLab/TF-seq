@@ -3,8 +3,8 @@ rootdir=.
 #star=/software/STAR-2.7.10a/bin/Linux_x86_64_static/STAR
 # Barcode length is 16 across all runs
 # UMI length is 10 for exp05 and exp06, and then 12 for the others
-exp_array=(exp05 exp06 exp07 exp08 exp09 exp10 exp11 exp12 exp13)
-umi_length_array=(10 10 12 12 12 12 12 12 12)
+exp_array=(exp05 exp06 exp07 exp08 exp09 exp10 exp11 exp12 exp13 exp14)
+umi_length_array=(10 10 12 12 12 12 12 12 12 12)
 barcode_length=16
 
 ### Creating output folders
