@@ -215,7 +215,7 @@ for (tf in tfs) {
 }
 
 
-saveRDS(seu, file = "results/C3H10_10X_all_exps_D0regressed10pc_50pc_integrated_dosealigned.rds")
+saveRDS(seu, file = "results/C3H10_10X_all_exps_D0regressed_integrated_dosealigned.rds")
 
 
 
