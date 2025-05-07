@@ -1,7 +1,7 @@
 ---
 title: "1.5.2 D0 assignment, Adipo_ref & Myo_ref calculation, and TF renaming"
-author: "Vincent Gardeux"
-date: "2023/12/19"
+author: "Vincent Gardeux, Wangjie Liu"
+date: "2024/6/19"
 output:
   html_document:
     df_print: paged
@@ -49,6 +49,7 @@ d0_confluent <- c("mCherry-BC11", "mCherry-BC12")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp05_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -80,6 +81,7 @@ d0_confluent <- c("mCherry-BC11", "mCherry-BC12")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp06_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -113,6 +115,7 @@ d0_confluent <- c("mCherry-BC17", "mCherry-BC22")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp07_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -149,6 +152,7 @@ d0_confluent <- c("mCherry-BC17", "mCherry-BC22")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp08_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -187,6 +191,7 @@ data.seurat_all[["exp08"]] <- data.seurat
 # D0 metadata
 d0 <- c("mCherry-BC21", "mCherry-BC22")
 d0_confluent <- c("mCherry-P5A8", "mCherry-P5A10", "mCherry-P5A11", "mCherry-P5B12")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp09_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
@@ -232,6 +237,7 @@ d0_confluent <- c("mCherry-P5A5", "mCherry-P5A8", "mCherry-P5A10")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp10_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -269,6 +275,7 @@ d0_confluent <- c()
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp11_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -306,6 +313,7 @@ d0_confluent <- c("mCherry_BC15")
 
 # Reading file
 data.seurat <- readRDS("results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
 
 # Assigning D0 cells
 data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
@@ -340,6 +348,30 @@ data.seurat$TF[data.seurat$TF == "Runx2_5"] <- "Runx2"
 # Putting Seurat object in the merged list
 data.seurat_all[["exp12-13"]] <- data.seurat
 ```
+
+#### Exp14
+```{r}
+# D0 metadata
+d0 <- c("mCherry-BC6")
+d0_confluent <- c("mCherry-BC1")
+
+# Reading file
+data.seurat <- readRDS("results/C3H10_10X_exp14_enriched.cellranger_kneepoint_outliers_cellcycle.rds")
+data.seurat$TF_meta <- data.seurat$TF
+
+# Assigning D0 cells
+data.seurat$TF[data.seurat$TF %in% d0] <- "D0"
+data.seurat$TF[data.seurat$TF %in% d0_confluent] <- "D0_confluent"
+
+# Removing TF cells with less than 8 cells / TF
+removed_tfs <- names(table(data.seurat$TF))[table(data.seurat$TF) < 8]
+message("Removing ",sum(data.seurat$TF %in% removed_tfs), " TF cells with less than 8 cells / TF: ", paste0("[", paste0(removed_tfs, collapse = ", "), "]"))
+data.seurat <- data.seurat[,!data.seurat$TF %in% removed_tfs]
+
+# Putting Seurat object in the merged list
+data.seurat_all[["exp14"]] <- data.seurat
+```
+
 
 ```{r}
 saveRDS(data.seurat_all, "results/C3H10_10X_all_exps_merged.rds")

@@ -1,7 +1,7 @@
 ---
 title: "1.5.1 Cell cycle scoring and vector calculation"
 author: "Vincent Gardeux"
-date: "2023/12/15"
+date: "2024/06/19"
 output:
   html_document:
     df_print: paged
@@ -188,6 +188,16 @@ cell_cycle(exp_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoin
            suffix_cellnames = "-12-13",
            data_cellcycle_genes = cellcycle_genes,
            exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
+           )
+```
+
+# Exp 14
+```{r}
+cell_cycle(exp_seurat = "results/C3H10_10X_exp14_enriched.cellranger_kneepoint_outliers.rds",
+           exp_tf_cell = "results/C3H10_10X_exp14_enriched.umi_matrix.txt",
+           suffix_cellnames = "-14",
+           data_cellcycle_genes = cellcycle_genes,
+           exp_out_seurat = "results/C3H10_10X_exp14_enriched.cellranger_kneepoint_outliers_cellcycle.rds"
            )
 ```
 
