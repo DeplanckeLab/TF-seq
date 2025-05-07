@@ -1,7 +1,7 @@
 ---
 title: "1.4 Filtering outlier cells of TF-seq data"
-author: "Vincent Gardeux"
-date: "2023/12/14"
+author: "Vincent Gardeux, Wangjie Liu"
+date: "2024/06/19"
 output:
   html_document:
     df_print: paged
@@ -106,5 +106,10 @@ filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp11_enriched.cellranger
 # Exp 12-13 - enriched
 ```{r}
 filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 30, max_pc_rRNA = 60, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp12-13_enriched.cellranger_kneepoint_outliers.rds")
+```
+
+# Exp 14 - enriched
+```{r}
+filtering_outlierCells(exp_seurat = "results/C3H10_10X_exp14_enriched.cellranger_kneepoint.rds", libsize_nmads = 6, features_nmads = 6, max_pc_mito = 15, max_pc_rRNA = 40, min_pc_protCod = 75, exp_out_seurat = "results/C3H10_10X_exp14_enriched.cellranger_kneepoint_outliers.rds")
 ```
 
