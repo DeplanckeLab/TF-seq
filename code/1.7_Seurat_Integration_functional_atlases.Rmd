@@ -1,7 +1,7 @@
 ---
 title: "Seurat integration for functional TF atlases"
 author: "Wangjie Liu"
-date: "2024-03-18"
+date: "2024-10-22"
 output: html_document
 ---
 
@@ -17,6 +17,7 @@ First, I'm loading the required libraries & functions
 
 ```{r}
 suppressPackageStartupMessages(library(Seurat)) # For single-cell pipeline
+suppressPackageStartupMessages(library(SeuratObject)) # For single-cell pipeline
 suppressPackageStartupMessages(library(tidyverse)) # For data tidying
 
 cat(bold("Seurat"), "version", as.character(packageVersion("Seurat")), "\n")
@@ -51,7 +52,8 @@ seurat_integration <- function(data, # Seurat object filtered with cells of inte
 
   # Then running the Seurat integration
   int_features <- SelectIntegrationFeatures(object.list = data.seurat_for_mnn, verbose = F)
-  int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, verbose = F)
+
+  int_anchors <- FindIntegrationAnchors(object.list = data.seurat_for_mnn, anchor.features = int_features, reduction = "rpca", dims = 1:50, verbose = F)
   data.seurat_integrated <- IntegrateData(anchorset = int_anchors, verbose = F)
   DefaultAssay(data.seurat_integrated) <- "integrated"
   
@@ -75,30 +77,33 @@ seurat_integration <- function(data, # Seurat object filtered with cells of inte
   data.seurat_integrated <- SetIdent(data.seurat_integrated, value = "TF")
   # Save Integrated Seurat object
   saveRDS(data.seurat_integrated, OutputDir)
+  
+  cat(paste0("keep ", ncol(data.seurat_integrated), " cells"))
 }
 ```
 
 # read the final atlas Seurat object
 ```{r}
 data.seurat <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
-dim(data.seurat) # 55536 39063
+
+dim(data.seurat) 
 ```
 
 # Filtering the data and run seurat integration
 
-## option 1) Keeping functional, D0 and ref cells, and all S+G2M at defalut phase
+## option 1) Keeping functional, D0 and ref cells, and all S+G2M at default phase
 
 ```{r}
 # Keeping functional, cycling, D0 and ref cells
 data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") | data.seurat$Phase %in% c("G2M", "S")]
-dim(data.filtered) # 55536 25801
+dim(data.filtered) 
 
 seurat_integration(data = data.filtered,
                    min.nCell = 5,
                    group.splitby = "batch",
-                   NPCs = 100,
+                   NPCs = 60,
                    OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_cycling_Phase.rds")
-# keep 25784 cells
+
 ```
 
 ## option 2) Keeping functional, D0 and ref cells in G1 at default phase
@@ -106,14 +111,14 @@ seurat_integration(data = data.filtered,
 ```{r}
 # Keeping functional, cycling, D0 and ref cells
 data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") & data.seurat$Phase == "G1"]
-dim(data.filtered) # 55536 17124
+dim(data.filtered) 
 
 seurat_integration(data = data.filtered,
                    min.nCell = 5,
                    group.splitby = "batch",
-                   NPCs = 80,
+                   NPCs = 60,
                    OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase.rds")
-# keep 16982 cells 
+
 ```
 
 ## option 3) Keeping functional, D0 and ref cells in G1 at adjusted phase
@@ -121,13 +126,13 @@ seurat_integration(data = data.filtered,
 ```{r}
 # Keeping functional, cycling, D0 and ref cells
 data.filtered <- data.seurat[,data.seurat$functional_cells %in% c("D0", "Adipo_ref", "Myo_ref", "TRUE") & data.seurat$Phase_corrected == "G1"]
-dim(data.filtered) # 55536 18225 
+dim(data.filtered) 
 
 seurat_integration(data = data.filtered,
                    min.nCell = 5,
                    group.splitby = "batch",
-                   NPCs = 90,
+                   NPCs = 60,
                    OutputDir = "results/C3H10_10X_all_exps_integrated_functional_TF_atlas_G1_Phase_corrected.rds")
-# keep 18102 cells
+
 ```
 
