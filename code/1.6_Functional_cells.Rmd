@@ -125,7 +125,7 @@ num_cores <- 32
 
 # I will proceed each phase, each batch, each TF separately
 allPhases <- c("G1","S","G2M")
-allBatches <- allBatches <- as.character(unique(data.seurat$batch_overall))
+allBatches <- as.character(unique(data.seurat$batch_overall))
 allTFs <- as.character(unique(data.seurat$TF))
 allTFs <- allTFs[!allTFs %in% c("D0", "D0_confluent", "Adipo_ref", "Myo_ref")]
 message("There are ", length(allTFs), " TFs to process")
@@ -158,7 +158,7 @@ message("Total time = ", toReadableTime(as.numeric(Sys.time() - start_time, unit
 
 # Stopping the parallelized threads
 stopCluster(cl)
-
+qh
 message(length(funct_annotations), " functional cells were found")
 ```
 
