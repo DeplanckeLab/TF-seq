@@ -366,3 +366,35 @@ optimal_mappings
 </table>
 
 
+
+
+```R
+plot <- mappings_oi |> 
+    ggplot(aes(x = scaling, y = distance, color = label)) + 
+    geom_line(size=2, alpha = 0.5) + 
+    # geom_vline(aes(xintercept = scaling, color = tf), data = optimal_mappings, linetype = "dashed") +
+    geom_point(aes(x = scaling, y = distance, color = label), data = optimal_mappings, size = 4) +
+    facet_wrap(~label,scales = "free_y") + 
+    scale_y_log10() + 
+    scale_x_log10(breaks = c(1/4, 1, 4), labels = c("1/4", "1", "4")) +
+    theme_minimal() + 
+    geom_vline(xintercept = optimal_mapping, linetype = "dashed") +
+    geom_vline(xintercept = 1) +
+    theme(legend.position = "None") +
+    xlab("Scaling") + ylab("Euclidean distance")
+ggsave(file.path(plots_folder, "scaling_individual.pdf"), plot, width = 6, height = 7)
+plot
+```
+
+
+    
+![png](README_files/README_20_0.png)
+    
+
+
+### Look at genes before and after scaling
+
+
+```R
+batch_colors <- c(exp05 = "#8da0ca", exp06 = "#e38cbb", exp07 = "#a6d056", exp08 = "#fed82f", exp09 = "#e4c494", exp10 = "#66c2a5", exp11 = "#fc8d62", `exp12-13` = "#ffcccc", exp14 = "#cc9999")
+```
