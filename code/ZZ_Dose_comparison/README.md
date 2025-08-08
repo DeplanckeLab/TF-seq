@@ -125,17 +125,17 @@ sc.tl.leiden(adata2_morf, resolution=0.5)
 adata2_morf = adata2_morf[adata2_morf.obs["leiden"].isin(["0", "1"])]
 ```
 
-    2025-08-08 16:06:17.535054: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+    2025-08-08 16:10:40.981711: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
     WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-    E0000 00:00:1754661977.544293 3946609 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
-    E0000 00:00:1754661977.546779 3946609 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
-    W0000 00:00:1754661977.554142 3946609 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-    W0000 00:00:1754661977.554147 3946609 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-    W0000 00:00:1754661977.554149 3946609 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
-    W0000 00:00:1754661977.554150 3946609 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+    E0000 00:00:1754662240.990966 3949708 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+    E0000 00:00:1754662240.993745 3949708 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+    W0000 00:00:1754662241.001471 3949708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+    W0000 00:00:1754662241.001477 3949708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+    W0000 00:00:1754662241.001478 3949708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+    W0000 00:00:1754662241.001479 3949708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
 
 
-    /tmp/ipykernel_3946609/1067945886.py:4: FutureWarning: In the future, the default backend for leiden will be igraph instead of leidenalg.
+    /tmp/ipykernel_3949708/1067945886.py:4: FutureWarning: In the future, the default backend for leiden will be igraph instead of leidenalg.
     
      To achieve the future defaults please pass: flavor="igraph" and n_iterations=2.  directed must also be False to work with igraph's implementation.
       sc.tl.leiden(adata2_morf, resolution=0.5)
@@ -378,7 +378,7 @@ ax.scatter(
 
 
 
-    <matplotlib.collections.PathCollection at 0x7f2ff67800b0>
+    <matplotlib.collections.PathCollection at 0x7f2716434bc0>
 
 
 
