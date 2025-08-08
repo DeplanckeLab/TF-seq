@@ -273,3 +273,20 @@ for (tf in tfs_oi) {
     mappings_tfs[[tf]] <- mappings
 }
 ```
+
+
+    [1] "Egr1"
+    [1] "Esr2"
+    [1] "Etv1"
+    [1] "Fos"
+    [1] "Grhl2"
+    [1] "Meis2"
+    [1] "Pou5f1"
+    [1] "Zfp24"
+    [1] "Zfp692"
+
+
+
+```R
+mappings <- map2_dfr(mappings_tfs, names(mappings_tfs), function(df, name) {mutate(df, tf = name)})
+```
