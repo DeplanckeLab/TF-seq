@@ -290,3 +290,47 @@ for (tf in tfs_oi) {
 ```R
 mappings <- map2_dfr(mappings_tfs, names(mappings_tfs), function(df, name) {mutate(df, tf = name)})
 ```
+
+
+```R
+mappings$pair <- paste(mappings$tf, mappings$batch1, mappings$batch2)
+
+mappings_oi <- mappings
+# mappings_oi <- mappings |> dplyr::filter(batch1 == "batch4" & batch2 == "batch3")
+# mappings_oi <- mappings |> dplyr::filter(batch1 == "batch2" & batch2 == "batch1")
+# mappings_oi <- mappings |> dplyr::filter(batch1 == "batch3" & batch2 == "batch1")
+# mappings_oi <- mappings |> dplyr::filter(batch1 == "batch6" & batch2 == "batch2")
+# mappings_oi <- mappings |> dplyr::filter(batch1 == "batch6" & batch2 == "batch1")
+mappings_oi <- mappings |> dplyr::filter(batch1 == "batch6" & batch2 == "batch2")
+optimal_mappings <- mappings_oi |> arrange(distance) |> group_by(tf, batch1, batch2) |> dplyr::slice(1)
+final_mappings <- mappings_oi |> group_by(tf, batch1, batch2) |> dplyr::slice(which.max(scaling))
+optimal_mapping <- exp(mean(log(optimal_mappings$scaling)))
+mappings_oi$label <- toupper(mappings_oi$tf)
+optimal_mappings$label <- toupper(optimal_mappings$tf)
+final_mappings$label <- toupper(final_mappings$tf)
+```
+
+
+```R
+options(repr.plot.width=6, repr.plot.height=6)
+plot1 <- ggplot(mappings_oi) + 
+geom_vline(xintercept = optimal_mapping, linetype = "dashed") +
+geom_vline(xintercept = 1) +
+geom_line(aes(x = scaling, y = distance, color = pair), linewidth = 2, alpha = 0.5) + 
+scale_x_log10(name = "Scaling", breaks = c(1/4, 1, 4), labels = c("¼", 1, 4), limits = c(1/4, 8)) + 
+scale_y_log10() +
+theme_minimal() + 
+geom_point(data = optimal_mappings, aes(x = scaling, y = distance, color = pair), size = 4) +
+ggrepel::geom_label_repel(data = final_mappings, aes(label = label, x = scaling, y = distance, fill = pair), color = "white", segment.color = "grey", segment.size = 0.5, nudge_y = 0, nudge_x = 0.1, lineheight = 1.2, size = 5, direction = "y", hjust = 0.) +
+geom_label(data = tibble(x = 0.8, y = 50, label = paste0("Optimal scaling: ", round(optimal_mapping, 2))), aes(x = x, y = y, label = label), hjust = 0.5, vjust = 1, size = 6) +
+theme(legend.position = "none") + ylab("Euclidean distance")
+
+plot2 <- ggplot(optimal_mappings) + geom_histogram(aes(x = scaling, fill = label), breaks = exp(seq(log(min(mappings$scaling)), log(8), length.out = 40))) + scale_x_log10(name = "Scaling", breaks = c(1/4, 1, 4), labels = c("¼", 1, 4), limits = c(1/4, 8)) + theme_minimal()  +
+geom_vline(xintercept = optimal_mapping, linetype = "dashed") +
+theme(legend.position = "none") + ylab("# TFs")
+
+plot <- patchwork::wrap_plots(plot1, plot2, ncol = 1, heights = c(5, 1))
+ggsave(file.path(plots_folder, "scaling.pdf"), plot, width = 6, height = 7)
+plot
+```
+
