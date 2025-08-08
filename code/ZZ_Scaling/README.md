@@ -121,3 +121,66 @@ tfs_oi <- max_doses_selected |> dplyr::filter(batch_overall %in% c("batch2", "ba
     [1m[22m`summarise()` has grouped output by 'TF'. You can override using the `.groups`
     argument.
 
+
+```R
+# tfs_oi <- c("Pparg", "Mycn")
+# tfs_oi <- c("Klf4")
+```
+
+
+```R
+select_tf_dataset <- function(seu, tf, batches = NULL) {
+    filtered_tf <- seu@meta.data |> filter((TF == !!tf) & (Phase == "G1"))
+    if (is.null(batches)) {
+        batches_oi <- unique(filtered_tf$batch_overall)
+    } else {
+        batches_oi <- batches
+    }
+    filtered_control <- seu@meta.data |> filter((TF %in% c("D0", "D0_confluent")) & (Phase == "G1") & (batch_overall %in% batches_oi))
+    filtered_tf <- filtered_tf |> filter(batch_overall %in% batches_oi)
+    filtered <- rbind(filtered_control, filtered_tf)
+    seu <- seu |> subset(cells = rownames(filtered))
+    return(seu)
+}
+
+
+select_tf_datasets <- function(seu, tf, batches = NULL) {
+    filtered_tf <- seu@meta.data |> filter((TF == !!tf) & (Phase == "G1"))
+    if (is.null(batches)) {
+        batches_oi <- unique(filtered_tf$batch_overall)
+    } else {
+        batches_oi <- batches
+    }
+    filtered_control <- seu@meta.data |> filter((TF %in% c("D0", "D0_confluent")) & (Phase == "G1") & (batch_overall %in% batches_oi))
+    filtered_tf <- filtered_tf |> filter(batch_overall %in% batches_oi)
+    filtered <- rbind(filtered_control, filtered_tf)
+
+    datasets <- list()
+    for (batch in batches_oi) {
+        filtered_oi <- filtered |> filter(batch_overall == !!batch)
+        dataset <- seu |> subset(cells = rownames(filtered_oi))
+        datasets[[batch]] <- dataset
+    }
+    return(datasets)
+}
+
+select_tf_datasets_batch <- function(seu, tf, batches = NULL) {
+    filtered_tf <- seu@meta.data |> filter((TF == !!tf) & (Phase == "G1"))
+    if (is.null(batches)) {
+        batches_oi <- unique(filtered_tf$batch)
+    } else {
+        batches_oi <- batches
+    }
+    filtered_control <- seu@meta.data |> filter((TF %in% c("D0", "D0_confluent")) & (Phase == "G1") & (batch %in% batches_oi))
+    filtered_tf <- filtered_tf |> filter(batch %in% batches_oi)
+    filtered <- rbind(filtered_control, filtered_tf)
+
+    datasets <- list()
+    for (batch in batches_oi) {
+        filtered_oi <- filtered |> filter(batch == !!batch)
+        dataset <- seu |> subset(cells = rownames(filtered_oi))
+        datasets[[batch]] <- dataset
+    }
+    return(datasets)
+}
+```
