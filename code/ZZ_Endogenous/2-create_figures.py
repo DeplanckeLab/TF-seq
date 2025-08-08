@@ -12,8 +12,8 @@
 # 2. We may underestimate exogenous levels if:
 # - The overexpression leads to mRNAs that are more easily translated
 
-# First run 1-download_census.py to download the data and create the adata object.
-# Then run this notebook (2-create_figures.py) to combine the data with scTFseq data.
+# First run [1-download_census.py](1-download_census.py) to download the data and create the adata object.
+# Then run this notebook [2-create_figures.py](2-create_figures.py) to combine the data with scTFseq data.
 
 # %%
 import matplotlib as mpl
