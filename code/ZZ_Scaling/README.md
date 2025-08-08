@@ -334,3 +334,35 @@ ggsave(file.path(plots_folder, "scaling.pdf"), plot, width = 6, height = 7)
 plot
 ```
 
+
+    
+![png](README_files/README_18_0.png)
+    
+
+
+
+```R
+optimal_mappings
+```
+
+
+<table class="dataframe">
+<caption>A grouped_df: 9 × 7</caption>
+<thead>
+	<tr><th scope=col>scaling</th><th scope=col>distance</th><th scope=col>batch1</th><th scope=col>batch2</th><th scope=col>tf</th><th scope=col>pair</th><th scope=col>label</th></tr>
+	<tr><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;dbl&gt;</th><th scope=col>&lt;fct&gt;</th><th scope=col>&lt;fct&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;chr&gt;</th><th scope=col>&lt;chr&gt;</th></tr>
+</thead>
+<tbody>
+	<tr><td>0.8335691</td><td>13.129609</td><td>batch6</td><td>batch2</td><td>Egr1  </td><td>Egr1 batch6 batch2  </td><td>EGR1  </td></tr>
+	<tr><td>0.7881629</td><td>18.927376</td><td>batch6</td><td>batch2</td><td>Esr2  </td><td>Esr2 batch6 batch2  </td><td>ESR2  </td></tr>
+	<tr><td>0.8335691</td><td>10.401548</td><td>batch6</td><td>batch2</td><td>Etv1  </td><td>Etv1 batch6 batch2  </td><td>ETV1  </td></tr>
+	<tr><td>0.7881629</td><td>11.356412</td><td>batch6</td><td>batch2</td><td>Fos   </td><td>Fos batch6 batch2   </td><td>FOS   </td></tr>
+	<tr><td>0.6851755</td><td>10.792782</td><td>batch6</td><td>batch2</td><td>Grhl2 </td><td>Grhl2 batch6 batch2 </td><td>GRHL2 </td></tr>
+	<tr><td>0.7663958</td><td> 8.684366</td><td>batch6</td><td>batch2</td><td>Meis2 </td><td>Meis2 batch6 batch2 </td><td>MEIS2 </td></tr>
+	<tr><td>0.7663958</td><td>11.059139</td><td>batch6</td><td>batch2</td><td>Pou5f1</td><td>Pou5f1 batch6 batch2</td><td>POU5F1</td></tr>
+	<tr><td>0.8105481</td><td>10.977397</td><td>batch6</td><td>batch2</td><td>Zfp24 </td><td>Zfp24 batch6 batch2 </td><td>ZFP24 </td></tr>
+	<tr><td>0.8335691</td><td>12.149629</td><td>batch6</td><td>batch2</td><td>Zfp692</td><td>Zfp692 batch6 batch2</td><td>ZFP692</td></tr>
+</tbody>
+</table>
+
+
