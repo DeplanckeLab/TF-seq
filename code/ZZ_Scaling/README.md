@@ -549,3 +549,17 @@ ggsave(file.path(plots_folder, paste0("dose_response_", TF_oi, "_aligned.pdf")),
     
     'select()' returned 1:1 mapping between keys and columns
     
+
+    
+![png](README_files/README_26_1.png)
+    
+
+
+
+```R
+get_ensembl_id <- function(symbol) {
+    ensembl <- biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+    genes <- biomaRt::getBM(attributes = c("ensembl_gene_id", "external_gene_name"), filters = "external_gene_name", values = symbol, mart = ensembl)
+    return(genes$ensembl_gene_id)
+}
+```
