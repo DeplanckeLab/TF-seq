@@ -1,3 +1,6 @@
 *.mtx
 *.pkl
 code/ZZ_Endogenous/*/*.csv
+__pycache__
+code/ZZ_Endogenous/*/*.ipynb
+code/ZZ_Endogenous/endo_vs_exo/plots_endogenous

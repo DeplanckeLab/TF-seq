@@ -12,6 +12,9 @@
 # 2. We may underestimate exogenous levels if:
 # - The overexpression leads to mRNAs that are more easily translated
 
+# First run 1-download_census.py to download the data and create the adata object.
+# Then run this notebook (2-create_figures.py) to combine the data with scTFseq data.
+
 # %%
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -24,26 +27,26 @@ import polyptich as pp
 
 pp.setup_ipython()
 
-import eyck
 import scanpy as sc
-
-import cellxgene_census
 
 import pickle
 
 # %%
+data_folder = pp.paths.get_data()
+
+# %%
 obs_alltfs = (
-    pd.read_csv("obs.csv").rename(columns={"Unnamed: 0": "cell"}).set_index("cell")
+    pd.read_csv(data_folder / "obs.csv").rename(columns={"Unnamed: 0": "cell"}).set_index("cell")
 )
 mtx = scipy.io.mmread("matrix.mtx").T.tocsr()
 obs_alltfs["ix"] = range(obs_alltfs.shape[0])
 
-var_alltfs = pd.read_csv("var.csv", index_col=0)
+var_alltfs = pd.read_csv(data_folder / "var.csv", index_col=0)
 
 # %%
 obs_alltfs["activity_to_D0"] = (
     pd.read_csv(
-        "df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated.csv"
+        data_folder / "df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated.csv"
     )
     .set_index("cell")["Activity_TF_to_D0"]
     .reindex(obs_alltfs.index)
@@ -63,7 +66,7 @@ from plot_endogenous import extract_tf_dataset
 
 # %%
 tfcapacity = pd.read_csv(
-    "TF_categories_on_potency_capacity_dosealigned.csv", index_col=0
+    data_folder / "TF_categories_on_potency_capacity_dosealigned.csv", index_col=0
 )
 tfcapacity.index.name = "TF"
 
@@ -88,10 +91,7 @@ adata.layers["norm"] = (
 )
 
 # %% [markdown]
-# ## Individual
-
-# %%
-obs_alltfs["TF"].value_counts().head(20)
+# We extract the datasets for Myo_ref and Adipo_ref, to see how enodogenous TF expression changes during induction of myogenesis and adipogenesis in our C3H10T1/2 cells.
 
 # %%
 adatamyo = extract_tf_dataset(mtx, obs_alltfs, var_alltfs, "Myo_ref", housekeeping=housekeeping)
@@ -103,6 +103,9 @@ adataadipo = extract_tf_dataset(mtx, obs_alltfs, var_alltfs, "Adipo_ref", housek
 adataadipo = adataadipo[adataadipo.obs["Phase_corrected"] == "G1"]
 adataadipo = adataadipo[adataadipo.obs["TF"] == "Adipo_ref"]
 adataadipo = adataadipo[adataadipo.obs.index[:200]]
+
+# %% [markdown]
+# ## Individual
 
 # %%
 gene = "Hnf4g"
@@ -128,9 +131,6 @@ from plot_endogenous import plot as plot_endogenous
 
 # %%
 tf = "Pparg"
-tf = "Runx2"
-# tf = "Cebpa"
-tf = "Meis2"
 fig = plot_endogenous(
     mtx, obs_alltfs, var_alltfs, tf, tf, housekeeping, adata, datasets=datasets, adatamyo = adatamyo, adataadipo = adataadipo, n_top = 20, width = 1.5
 )
@@ -140,25 +140,21 @@ fig.display()
 import pathlib
 import tqdm
 
-plot_folder = pathlib.Path("plots_endogenous")
+plot_folder = pathlib.Path("./plots_endogenous")
 import shutil
 
 # shutil.rmtree(plot_folder, ignore_errors=True)
-# plot_folder.mkdir(exist_ok=True)
+plot_folder.mkdir(exist_ok=True)
 
 tfs_oi = [tf for tf in tfs if tf in adata.var.index]
-# tfs_oi = tfcapacity.query("category != 'low-capacity'").index
-# tfs_oi = ["Cebpa", "Pparg", "Runx2", "Myog", "Nfkb1", "Meis2", "Fosl2", ]
-tfs_oi = ["Klf12"]
-# tfs_oi = ["Meis2", "Cebpa", "Runx2", "Pparg"]
+tfs_oi = ["Cebpa", "Pparg", "Runx2", "Myog", "Nfkb1", "Meis2", "Fosl2"]
 
 for gene in tqdm.tqdm(tfs_oi):
     fig = plot_endogenous(
         mtx, obs_alltfs, var_alltfs, gene, gene, housekeeping, adata, datasets=datasets, adatamyo = adatamyo, adataadipo = adataadipo
     )
-    # fig.savefig(plot_folder / f"{gene}.pdf", display = False, transparent=True)
-    # fig.savefig(plot_folder / f"{gene}.png", display = True, transparent=True)
-    # plt.close(fig)
+    fig.savefig(plot_folder / f"{gene}.pdf", display = False, transparent=True)
+    fig.savefig(plot_folder / f"{gene}.png", display = True, transparent=True)
 
 # %%
 citations = {}
