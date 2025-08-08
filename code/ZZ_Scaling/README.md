@@ -398,3 +398,100 @@ plot
 ```R
 batch_colors <- c(exp05 = "#8da0ca", exp06 = "#e38cbb", exp07 = "#a6d056", exp08 = "#fed82f", exp09 = "#e4c494", exp10 = "#66c2a5", exp11 = "#fc8d62", `exp12-13` = "#ffcccc", exp14 = "#cc9999")
 ```
+
+```R
+TF_oi <- "Fos"
+# TF_oi <- "Esr2"
+# TF_oi <- "Egr1"
+# TF_oi <- "Meis2"
+# TF_oi <- "Pou5f1"
+# TF_oi <- "Grhl2"
+
+seu_tf <- select_tf_dataset(seu2, TF_oi) # use original data for differential genes
+seu_tf <- SetIdent(seu_tf, value = "TF")
+markers <- FindMarkers(seu_tf, ident.1 = "D0_confluent", ident.2 = TF_oi)
+# markers <- markers[!(rownames(markers) %in% c("ENSMUSG00000086474", "ENSMUSG00000111467", "ENSMUSG00000097652", "ENSMUSG00000093507", "ENSMUSG00000085604", "ENSMUSG00000001119", "ENSMUSG00000020241")), ]
+```
+
+
+```R
+seu_tf <- select_tf_dataset(seu, TF_oi, batches = c("batch2", "batch6")) # use original data for differential genes
+seus_tf <- select_tf_datasets_batch(seu, TF_oi, batches = c("exp07", "exp14")) # use corrected data for plotting
+```
+
+
+```R
+layer <- "corrected_integrated"
+gene_ids <- VariableFeatures(seu_tf)
+```
+
+
+```R
+plots <- list()
+for (gene in rownames(markers)[1:12]) {
+    gene_ix <- which(gene_ids == gene)
+ 
+    for (aligned in c(F, T)) {
+        plotdata_dots <- seu_tf@meta.data
+        plotdata_dots$expression <- Seurat::FetchData(seu_tf, vars = gene, assay = layer)[[1]]
+
+        plotadata <- map_dfr(names(seus_tf), function(batch) {
+            data <- plotdata_dots |> dplyr::filter(batch == !!batch)
+            if (nrow(data) == 0) {
+                return(tibble())
+            }
+            if (aligned) {
+                x <- data$Dose_aligned
+                x_noisy <- data$Dose_aligned + rnorm(nrow(data), sd = 0.1)
+                x_pred <- seq(0, quantile(x[x>0], 0.95), length.out = 100)
+            } else {
+                x <- data$Dose
+                x_noisy <- data$Dose + rnorm(nrow(data), sd = 0.1)
+                x_pred <- seq(0, quantile(x[x>0], 0.95), length.out = 100)
+            }
+            y <- data$expression
+
+
+            # Fit a GAM with a smoothing spline, just like smooth.spline
+            gam_model <- mgcv::gam(y ~ s(x_noisy, sp = 1), method = 'REML')
+
+            # Make predictions
+            y_pred <- predict(gam_model, newdata = data.frame(x_noisy = x_pred), type = 'response', se.fit = TRUE)
+
+            # Extract predicted values and standard errors
+            fit <- y_pred$fit
+            se <- y_pred$se.fit
+
+            # Calculate confidence intervals
+            data.frame(x = x_pred, y = fit, se = se, batch = batch)
+        })
+
+        tryCatch(
+        symbol <- convert_to_symbol(gene),
+        error = function(e) {
+            symbol <- gene
+        }
+        )
+
+        options(repr.plot.width=3, repr.plot.height=3)
+        plot <- ggplot(plotadata) + 
+        geom_line(aes(x = x, y = y, color = batch), linewidth = 1.5) + 
+        geom_ribbon(aes(x = x, ymin = y - se*2, ymax = y + se*2, fill = batch), alpha = 0.2) +
+        # geom_point(aes(x = Dose, y = expression, color = batch), alpha = 0.1, data = plotdata_dots, size= 0.1) +
+        theme_minimal() + 
+        theme(legend.position = "None") + xlab("Dose") + ylab("Expression") + ggtitle(ifelse(aligned, paste0(symbol, " aligned"), symbol)) +
+        scale_color_manual(values = batch_colors) + scale_fill_manual(values = batch_colors) +
+        scale_y_continuous(name = NULL) +
+        scale_x_continuous(name = NULL)
+
+        plots <- c(plots, list(plot))
+    }
+}
+ncol <- min(8, length(plots))
+nrow <- ceiling(length(plots) / ncol)
+plot <- patchwork::wrap_plots(plots, ncol = ncol, nrow,)
+options(repr.plot.width=ncol * 2.5, repr.plot.height=nrow * 2.5)
+plot
+
+ggsave(file.path(plots_folder, paste0("dose_response_", TF_oi, "_aligned.pdf")), plot, width = ncol * 2.5, height = nrow * 2.5)
+```
