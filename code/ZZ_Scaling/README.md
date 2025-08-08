@@ -563,3 +563,84 @@ get_ensembl_id <- function(symbol) {
     return(genes$ensembl_gene_id)
 }
 ```
+
+
+
+```R
+plots <- list()
+for (gene in convert_to_ensembl("Cav1")) {
+    gene_ix <- which(gene_ids == gene)
+
+    for (scaling in c(0.6, 0.8, 1, 1.2, 1.4)) {
+        plotdata_dots <- seu_tf@meta.data
+        plotdata_dots$expression <- Seurat::FetchData(seu_tf, vars = gene, assay = layer)[[1]]
+
+        plotdata <- map_dfr(names(seus_tf), function(batch) {
+            data <- plotdata_dots |> dplyr::filter(batch == !!batch)
+            if (nrow(data) == 0) {
+                return(tibble())
+            }
+            data$Dose <- ifelse(data$batch == "exp07", data$Dose * scaling, data$Dose)
+            x <- data$Dose
+            x_noisy <- data$Dose + rnorm(nrow(data), sd = 0.1)
+            x_pred <- seq(0, quantile(x[x>0], 0.95), length.out = 100)
+            y <- data$expression
+
+            # Fit a GAM with a smoothing spline, just like smooth.spline
+            gam_model <- mgcv::gam(y ~ s(x_noisy, sp = 1), method = 'REML')
+
+            # Make predictions
+            y_pred <- predict(gam_model, newdata = data.frame(x_noisy = x_pred), type = 'response', se.fit = TRUE)
+
+            # Extract predicted values and standard errors
+            fit <- y_pred$fit
+            se <- y_pred$se.fit
+
+            # Calculate confidence intervals
+            data.frame(x = x_pred, y = fit, se = se, batch = batch)
+        })
+
+        tryCatch(
+        symbol <- convert_to_symbol(gene),
+        error = function(e) {
+            symbol <- gene
+        }
+        )
+
+        options(repr.plot.width=3, repr.plot.height=3)
+        plot <- ggplot(plotdata) + 
+        geom_line(aes(x = x, y = y, color = batch), linewidth = 1.5) + 
+        geom_ribbon(aes(x = x, ymin = y - se*2, ymax = y + se*2, fill = batch), alpha = 0.2) +
+        # geom_point(aes(x = Dose, y = expression, color = batch), alpha = 0.1, data = plotdata_dots, size= 0.1) +
+        theme_minimal() + 
+        theme(legend.position = "None") + xlab("Dose") + ylab("Expression") + ggtitle(paste0(" Scaling=", scaling)) +
+        scale_color_manual(values = batch_colors) + scale_fill_manual(values = batch_colors) +
+        scale_y_continuous(name = NULL) +
+        scale_x_continuous(name = NULL)
+
+        plots <- c(plots, list(plot))
+    }
+}
+ncol <- min(8, length(plots))
+nrow <- ceiling(length(plots) / ncol)
+plot <- patchwork::wrap_plots(plots, ncol = ncol, nrow,)
+options(repr.plot.width=ncol * 2.5, repr.plot.height=nrow * 2.5)
+plot
+
+ggsave(file.path(plots_folder, paste0("dose_response_", TF_oi, "_aligned_example.pdf")), plot, width = ncol * 2.5, height = nrow * 2.5)
+ggsave(file.path(paste0("dose_alignment.png")), plot, width = ncol * 2.5, height = nrow * 2.5)
+```
+
+    'select()' returned 1:1 mapping between keys and columns
+    
+    'select()' returned 1:1 mapping between keys and columns
+    
+    'select()' returned 1:1 mapping between keys and columns
+    
+    'select()' returned 1:1 mapping between keys and columns
+    
+    'select()' returned 1:1 mapping between keys and columns
+    
+    'select()' returned 1:1 mapping between keys and columns
+    
+
