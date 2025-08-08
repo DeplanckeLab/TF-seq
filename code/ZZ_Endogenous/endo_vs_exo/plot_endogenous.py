@@ -150,7 +150,7 @@ def plot(
     if citations is None:
         citations = {}
     adatatf = extract_tf_dataset(mtx, obs_alltfs, var_alltfs, tf, housekeeping)
-    adatatf = adatatf[adatatf.obs["Phase_corrected"] == "G1"]
+    adatatf = adatatf[adatatf.obs["Phase_corrected"] == "G1"].copy()
     # adatatf_norm = adatatf.copy()
 
     # sc.pp.normalize_total(adatatf_norm)
