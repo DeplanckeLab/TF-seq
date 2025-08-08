@@ -184,3 +184,92 @@ select_tf_datasets_batch <- function(seu, tf, batches = NULL) {
     return(datasets)
 }
 ```
+
+```R
+mappings_tfs <- list()
+
+for (tf in tfs_oi) {
+    print(tf)
+
+    # filter on batches with high dose
+    batches <- max_doses_selected |> filter(TF == tf) |> pull(batch_overall)
+    seu_tf <- select_tf_dataset(seu, tf, batches = batches)
+    seus_tf <- select_tf_datasets(seu, tf, batches = batches)
+
+    DefaultAssay(seu_tf) <- "corrected"
+
+    # take the union of 1000 variable genes
+    features <- c()
+    for (batch in batches) {
+        stds <- apply(seu_tf[,seu_tf$batch_overall == batch]@assays$corrected@data, 1, sd) 
+        features <- c(features, rownames(seu_tf@assays$corrected@data)[order(-stds)][1:1000])
+    }
+    VariableFeatures(seu_tf) <- unique(features)
+    # VariableFeatures(seu_tf) <- rownames(seu_tf)
+
+    layer <- "corrected"
+    spline_values_batches <- map(seus_tf, function(seu) {
+        Y <- t(seu@assays[[layer]]@data[VariableFeatures(seu_tf), ])
+        x <- seu$Dose
+
+        # xmax <- max(x)
+        xmax <- quantile(x[x>0], 0.9)
+
+        knots <- c(seq(0, xmax, 0.5), xmax)
+        
+        x_desired <- c(seq(0., xmax,by = 0.025), xmax)
+        # x_desired <- c(seq(0., xmax,length.out=100), xmax)
+        
+        spline_values <- apply(Y, 2, function(y) {
+            if (sum(y > 0) < 3) {
+                return(rep(0, length(x_desired)))
+            }
+            spline <- smooth.spline(x, y, all.knots = knots, tol = 0.5)
+            predict(spline, x_desired)$y
+        })
+
+        return(list(y = spline_values, x = x_desired))
+    })
+
+    # combinations = data.frame(t(combn(names(spline_values_batches), 2)))
+    combinations = expand.grid(names(spline_values_batches), names(spline_values_batches))
+    colnames(combinations) <- c("batch1", "batch2")
+    combinations$oi <- map2_lgl(combinations$batch1, combinations$batch2, function(batch1, batch2) {
+        # check whether batch1 is earlier than batch 2 in the levels
+        return (which(names(spline_values_batches) == batch1) > which(names(spline_values_batches) == batch2))
+    })
+    combinations <- combinations |> dplyr::filter(oi)
+
+    mapping <- function(scaling, x1, x2, y1, y2){
+        x2_scaled <- x2 * scaling
+        mapping <- map_int(x2_scaled, ~which.min(abs(x1 - .x)))
+        dist1 <- sum(rowMeans((y1[mapping, ] - y2[, ])**2))
+
+        x1_scaled <- x1 / scaling
+        mapping <- map_int(x1_scaled, ~which.min(abs(x2 - .x)))
+        dist2 <- sum(rowMeans((y2[mapping, ] - y1[, ])**2))
+
+        return(dist1 + dist2)
+    }
+
+    combinations_oi <- combinations |> dplyr::filter(oi)
+
+    mappings <- map2_dfr(combinations_oi$batch1, combinations_oi$batch2, function(batch1, batch2) {
+        y1 <- spline_values_batches[[batch1]]$y
+        y2 <- spline_values_batches[[batch2]]$y
+
+        # center at Dose 0
+        y1 <- sweep(y1, 2, y1[1, ], "-")
+        y2 <- sweep(y2, 2, y2[1, ], "-")
+
+        x1 <- spline_values_batches[[batch1]]$x
+        x2 <- spline_values_batches[[batch2]]$x
+
+        scalers <- 2**(seq(-2., 2., length.out = 100))
+        distances <- purrr::map_dbl(scalers, mapping, x1 = x1, x2 = x2, y1 = y1, y2 = y2)
+        plotdata <- tibble(scaling = scalers, distance = distances, batch1 = batch1, batch2 = batch2)
+    })
+
+    mappings_tfs[[tf]] <- mappings
+}
+```
