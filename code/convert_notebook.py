@@ -57,11 +57,10 @@ def export_notebook_to_markdown(ipynb_file, md_file, figures_dir=".figures"):
 
 
 def main():
-    import os
     parser = argparse.ArgumentParser(description="Convert a Python percent script to an executed notebook and Markdown.")
     parser.add_argument("input_py", help="Path to the input .py file (percent script)")
     parser.add_argument("output_md", help="Path to the output .md file")
-    parser.add_argument("execute", action="store_true", help="Execute the notebook after conversion", default=False)
+    parser.add_argument("--execute", action="store_true", help="Execute the notebook after conversion")
     args = parser.parse_args()
 
     args.input_py = os.path.abspath(args.input_py)
@@ -69,7 +68,7 @@ def main():
 
     ipynb_file = args.input_py.replace(".py", ".ipynb")
 
-    if False:
+    if args.execute:
         print(f"🔁 Converting {args.input_py} to notebook...")
         convert_percent_script_to_notebook(args.input_py, ipynb_file)
 
