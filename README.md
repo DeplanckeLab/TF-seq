@@ -37,25 +37,25 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td><strong>7d</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
     <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
     <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
-    <tr><th colspan="2" border="1">ED Figure 2</th></tr>
-    <tr><td><strong>ed2a</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ed2b</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ed2c</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ed2d</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ed2e</strong></td><td>?</td></tr>
-    <tr><th colspan="2" border="1">ED Figure 4</th></tr>
-    <tr><td><strong>ed4a</strong></td><td>?</td></tr>
-    <tr><td><strong>ed4b</strong></td><td>?</td></tr>
-    <tr><td><strong>ed4c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>ed4d</strong></td><td>?</td></tr>
-    <tr><td><strong>ed4e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><td><strong>ed4f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><td><strong>ed4g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><th colspan="2" border="1">ED Figure 9</th></tr>
-    <tr><td><strong>ed9a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
-    <tr><td><strong>ed9b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
-    <tr><td><strong>ed9e</strong></td><td>?</td></tr>
-    <tr><td><strong>ed9f</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><th colspan="2" border="1">Extended Data Figure 2</th></tr>
+    <tr><td><strong>ED2a</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td><strong>ED2b</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td><strong>ED2c</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td><strong>ED2d</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td><strong>ED2e</strong></td><td>?</td></tr>
+    <tr><th colspan="2" border="1">Extended Data Figure 4</th></tr>
+    <tr><td><strong>ED4a</strong></td><td>?</td></tr>
+    <tr><td><strong>ED4b</strong></td><td>?</td></tr>
+    <tr><td><strong>ED4c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>ED4d</strong></td><td>?</td></tr>
+    <tr><td><strong>ED4e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td><strong>ED4f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td><strong>ED4g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><th colspan="2" border="1">Extended Data Figure 9</th></tr>
+    <tr><td><strong>ED9a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><td><strong>ED9b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td><strong>ED9e</strong></td><td>?</td></tr>
+    <tr><td><strong>ED9f</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
     <tr><th colspan="2" border="1">Supplementary Figure 3</th></tr>
     <tr><td><strong>S3a</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
     <tr><td><strong>S3b</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
