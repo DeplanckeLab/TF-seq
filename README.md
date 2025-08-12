@@ -5,6 +5,8 @@ Material and source code for the scTF-seq manuscript
 All .fastq files were deposited on ArrayExpress under the accession number [E-MTAB-13010](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-13010). It comprises nine 10x libraries (exp5-13), each of them containing different overexpressed TFs. Information about which TF is associated with which library can be found in the [metadata files](metadata/).<br/>
 Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lineage studies (adipocyte, myocytes, and chondrocytes differentiation). This information can be found in the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file.
 
+**⏭ Preprocessing of raw data to a usuable Seurat object can be found in [code/01_Preprocessing_and_integration](code/01_Preprocessing_and_integration/).**
+
 
 ## 1. Notebooks/scripts that reproduce each figure panel
 
