@@ -19,54 +19,54 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><th colspan="2" border="1">Figure 1</th></tr>
     <tr><th colspan="2" border="1">Figure 2</th></tr>
     <tr><th colspan="2" border="1">Figure 3</th></tr>
-    <tr><td><strong>3a</strong></td><td>?</td></tr>
-    <tr><td><strong>3b</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>3c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>3d</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>3e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>3e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>3f</strong></td><td>?</td></tr>
-    <tr><td><strong>3g</strong></td><td>?</td></tr>
+    <tr><td>3<strong>a</strong></td><td>?</td></tr>
+    <tr><td>3<strong>b</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>3<strong>c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>3<strong>d</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>3<strong>e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>3<strong>e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>3<strong>f</strong></td><td>?</td></tr>
+    <tr><td>3<strong>g</strong></td><td>?</td></tr>
     <tr><th colspan="2" border="1">Figure 5</th></tr>
     <tr><th colspan="2" border="1">Figure 4</th></tr>
     <tr><th colspan="2" border="1">Figure 6</th></tr>
     <tr><th colspan="2" border="1">Figure 7</th></tr>
-    <tr><td><strong>7a</strong></td><td><a href="code/ZZ_combinations/0-prepare_main_seurat.ipynb">ZZ_combinations/0-prepare_main_seurat.ipynb</a></td></tr>
-    <tr><td><strong>7b</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
-    <tr><td><strong>7c</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
-    <tr><td><strong>7d</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
-    <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
-    <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><td>7<strong>a</strong></td><td><a href="code/ZZ_combinations/0-prepare_main_seurat.ipynb">ZZ_combinations/0-prepare_main_seurat.ipynb</a></td></tr>
+    <tr><td>7<strong>b</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
+    <tr><td>7<strong>c</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
+    <tr><td>7<strong>d</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td>7<strong>e</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td>7<strong>e</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 2</th></tr>
-    <tr><td><strong>ED2a</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ED2b</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ED2c</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ED2d</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
-    <tr><td><strong>ED2e</strong></td><td>?</td></tr>
+    <tr><td>ED2<strong>a</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td>ED2<strong>b</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td>ED2<strong>c</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td>ED2<strong>d</strong></td><td><a href="code/ZZ_Dose_comparison/dose_comparison.py">ZZ_Dose_comparison/dose_comparison.py</a></td></tr>
+    <tr><td>ED2<strong>e</strong></td><td>?</td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 4</th></tr>
-    <tr><td><strong>ED4a</strong></td><td>?</td></tr>
-    <tr><td><strong>ED4b</strong></td><td>?</td></tr>
-    <tr><td><strong>ED4c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
-    <tr><td><strong>ED4d</strong></td><td>?</td></tr>
-    <tr><td><strong>ED4e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><td><strong>ED4f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><td><strong>ED4g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td>ED4<strong>a</strong></td><td>?</td></tr>
+    <tr><td>ED4<strong>b</strong></td><td>?</td></tr>
+    <tr><td>ED4<strong>c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td>ED4<strong>d</strong></td><td>?</td></tr>
+    <tr><td>ED4<strong>e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td>ED4<strong>f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td>ED4<strong>g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 9</th></tr>
-    <tr><td><strong>ED9a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
-    <tr><td><strong>ED9b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
-    <tr><td><strong>ED9e</strong></td><td>?</td></tr>
-    <tr><td><strong>ED9f</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><td>ED9<strong>a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><td>ED9<strong>b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td>ED9<strong>e</strong></td><td>?</td></tr>
+    <tr><td>ED9<strong>f</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
     <tr><th colspan="2" border="1">Supplementary Figure 3</th></tr>
-    <tr><td><strong>S3a</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3b</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3c</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3d</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3e</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3f</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3g</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td><strong>S3h</strong></td><td><a href="code/ZZ_Reproducibility/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td><strong>S3i</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td><strong>S3j</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td><strong>S3k</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>a</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>b</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>c</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>d</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>e</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>f</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>g</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
+    <tr><td>S3<strong>h</strong></td><td><a href="code/ZZ_Reproducibility/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>i</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>j</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>k</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
   </tbody>
 </table>
