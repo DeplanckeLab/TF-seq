@@ -136,3 +136,71 @@ performMutualExclusionDE <- function(seurat_object,
   message("Done!")
   return(merged_df)
 }
+# Load necessary libraries
+library(ggplot2)
+library(patchwork)
+
+#' Automatically Adjust and Display a Patchwork Plot (V2 - Layout Aware)
+#'
+#' This function inspects a patchwork object to determine its grid dimensions
+#' (rows and columns) and calculates an appropriate plot size. It respects
+#' layouts defined by operators (+, /, |) and plot_layout(). It then sets
+#' the `repr.plot.width` and `repr.plot.height` options before printing.
+#'
+#' @param p A patchwork object or a single ggplot object.
+#' @param base_width The desired width for a single subplot (in inches).
+#' @param base_height The desired height for a single subplot (in inches).
+#'
+#' @return Invisibly returns the original object. The main purpose is the
+#'   side-effect of printing the plot with adjusted dimensions.
+#'
+auto_size_patchwork_v2 <- function(p, base_width = 6, base_height = 4.5) {
+  # 1. Validate input
+  if (!inherits(p, "ggplot")) {
+    stop("Input 'p' must be a ggplot or patchwork object.")
+  }
+
+  n_cols <- NULL
+  n_rows <- NULL
+
+  # 2. Try to get layout from the patchwork object itself
+  # This is the most reliable method and respects user-defined layouts
+  if (inherits(p, "patchwork")) {
+    layout_df <- try(patchwork::get_layout(p), silent = TRUE)
+    if (!inherits(layout_df, "try-error")) {
+      n_cols <- max(layout_df$COL)
+      n_rows <- max(layout_df$ROW)
+    }
+  }
+
+  # 3. If layout couldn't be determined, fall back to counting plots
+  if (is.null(n_cols) || is.null(n_rows)) {
+    n_plots <- if (inherits(p, "patchwork")) length(p) else 1
+    
+    # Automatic "squarish" layout calculation (the fallback)
+    if (n_plots > 1) {
+      n_cols <- ceiling(sqrt(n_plots))
+      n_rows <- ceiling(n_plots / n_cols)
+    } else {
+      n_cols <- 1
+      n_rows <- 1
+    }
+  }
+
+  # 4. Calculate the final plot dimensions
+  # Add a small buffer for overall plot titles, legends, or captions
+  final_width <- n_cols * base_width
+  final_height <- n_rows * base_height + 0.5
+
+  # 5. Set the repr options for the output cell
+  options(
+    repr.plot.width = final_width,
+    repr.plot.height = final_height
+  )
+
+  # 6. Print the plot to display it
+  print(p)
+  
+  # Return the object invisibly
+  invisible(p)
+}
