@@ -16,9 +16,9 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     </tr>
   </thead>
   <tbody>
-    <tr><th colspan="2">Figure 1</th></tr>
-    <tr><th colspan="2">Figure 2</th></tr>
-    <tr><th colspan="2">Figure 3</th></tr>
+    <tr><th colspan="2" border="1">Figure 1</th></tr>
+    <tr><th colspan="2" border="1">Figure 2</th></tr>
+    <tr><th colspan="2" border="1">Figure 3</th></tr>
     <tr><td><strong>3a</strong></td><td>?</td></tr>
     <tr><td><strong>3b</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
     <tr><td><strong>3c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
@@ -27,7 +27,7 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td><strong>3e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
     <tr><td><strong>3f</strong></td><td>?</td></tr>
     <tr><td><strong>3g</strong></td><td>?</td></tr>
-    <tr><th colspan="2">ED Figure 4</th></tr>
+    <tr><th colspan="2" border="1">ED Figure 4</th></tr>
     <tr><td><strong>ed4a</strong></td><td>?</td></tr>
     <tr><td><strong>ed4b</strong></td><td>?</td></tr>
     <tr><td><strong>ed4c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
@@ -35,17 +35,17 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td><strong>ed4e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
     <tr><td><strong>ed4f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
     <tr><td><strong>ed4g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
-    <tr><th colspan="2">Figure 5</th></tr>
-    <tr><th colspan="2">Figure 4</th></tr>
-    <tr><th colspan="2">Figure 6</th></tr>
-    <tr><th colspan="2">Figure 7</th></tr>
+    <tr><th colspan="2" border="1">Figure 5</th></tr>
+    <tr><th colspan="2" border="1">Figure 4</th></tr>
+    <tr><th colspan="2" border="1">Figure 6</th></tr>
+    <tr><th colspan="2" border="1">Figure 7</th></tr>
     <tr><td><strong>7a</strong></td><td><a href="code/ZZ_combinations/0-prepare_main_seurat.ipynb">ZZ_combinations/0-prepare_main_seurat.ipynb</a></td></tr>
     <tr><td><strong>7b</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
     <tr><td><strong>7c</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
     <tr><td><strong>7d</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
     <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
     <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
-    <tr><th colspan="2">ED Figure 9</th></tr>
+    <tr><th colspan="2" border="1">ED Figure 9</th></tr>
     <tr><td><strong>ed9a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
     <tr><td><strong>ed9b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
     <tr><td><strong>ed9e</strong></td><td>?</td></tr>
