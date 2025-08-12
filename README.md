@@ -10,7 +10,7 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
 
 ## 1. Notebooks/scripts that reproduce each figure panel
 
-<table border="1" cellspacing="0" cellpadding="5">
+<table border="1" cellspacing="100" cellpadding="0">
   <thead>
     <tr>
       <th>Panel</th>
