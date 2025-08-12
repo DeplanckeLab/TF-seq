@@ -1,6 +1,5 @@
-### Author: Wouter
-### Datasets: Single cell RNA-seq from TF-seq EXP12-13
-### Goal: Create separate seurat objects for each combination
+# # Run differential expression analyses for each combination and single perturbations
+# This is used in later scripts to assess synergism and how one perturbation may dominate another
 
 library(Seurat)
 library(tidyverse)
