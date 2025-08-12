@@ -8,27 +8,47 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
 
 ## 1. Each figure panel can be reproduced using the following scripts/notebooks
 
-| Panel        | Script                                      |
-| -----------: |  ------------------------------------------ |
-| **Figure 1**                  |
-| **Figure 3**                  |
-| **3a**    | ?  |
-| **3b**    | [ZZ_Endogenous/2-create_figures.ipynb](code/ZZ_Endogenous/2-create_figures.ipynb)  |
-| **3c**    | [ZZ_Endogenous/2-create_figures.ipynb](code/ZZ_Endogenous/2-create_figures.ipynb)  |
-| **3d**    | [ZZ_Endogenous/2-create_figures.ipynb](code/ZZ_Endogenous/2-create_figures.ipynb)  |
-| **3e**    | [ZZ_Endogenous/2-create_figures.ipynb](code/ZZ_Endogenous/2-create_figures.ipynb)  |
-| **3f**    | ?  |
-| **3g**    | ?  |
-| **Figure 4**                  |
-| **Figure 7**                  |
-| **7a**    | [ZZ_combinations/0-prepare_main_seurat.ipynb](code/ZZ_combinations/0-prepare_main_seurat.ipynb)  |
-| **7b**    | [ZZ_combinations/4-state_bias.ipynb](code/ZZ_combinations/4-state_bias.ipynb)                  |
-| **7c**    | [ZZ_combinations/4-state_bias.ipynb](code/ZZ_combinations/4-state_bias.ipynb)                  |
-| **7d**    | [ZZ_combinations/3-pairwise_dosage](code/ZZ_combinations/3-pairwise_dosage.ipynb)                  |
-| **7e**    | [ZZ_combinations/3-pairwise_dosage](code/ZZ_combinations/3-pairwise_dosage.ipynb)                  |
-| **7e**    | [ZZ_combinations/5-unique_state_enrichment.ipynb](code/ZZ_combinations/5-unique_state_enrichment.ipynb)                  |
-| **Extended Data Figure Figure 7**                  |
-| **ed9a**    | [ZZ_combinations/5-unique_state_enrichment.ipynb](code/ZZ_combinations/5-unique_state_enrichment.ipynb)                  |
-| **ed9b**    | [ZZ_combinations/3-pairwise_dosage.ipynb](code/ZZ_combinations/3-pairwise_dosage.ipynb)                  |
-| **ed9e**    | ?                  |
-| **ed9f**    | [ZZ_combinations/5-unique_state_enrichment.ipynb](code/ZZ_combinations/5-unique_state_enrichment.ipynb)                  |
+<table border="1" cellspacing="0" cellpadding="5">
+  <thead>
+    <tr>
+      <th>Panel</th>
+      <th>Script</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><th colspan="2">Figure 1</th></tr>
+    <tr><th colspan="2">Figure 2</th></tr>
+    <tr><th colspan="2">Figure 3</th></tr>
+    <tr><td><strong>3a</strong></td><td>?</td></tr>
+    <tr><td><strong>3b</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>3c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>3d</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>3e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>3e</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>3f</strong></td><td>?</td></tr>
+    <tr><td><strong>3g</strong></td><td>?</td></tr>
+    <tr><th colspan="2">ED Figure 4</th></tr>
+    <tr><td><strong>ed4a</strong></td><td>?</td></tr>
+    <tr><td><strong>ed4b</strong></td><td>?</td></tr>
+    <tr><td><strong>ed4c</strong></td><td><a href="code/ZZ_Endogenous/2-create_figures.ipynb">ZZ_Endogenous/2-create_figures.ipynb</a></td></tr>
+    <tr><td><strong>ed4d</strong></td><td>?</td></tr>
+    <tr><td><strong>ed4e</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td><strong>ed4f</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><td><strong>ed4g</strong></td><td><a href="code/ZZ_power/power.ipynb">ZZ_power/power.ipynb</a></td></tr>
+    <tr><th colspan="2">Figure 5</th></tr>
+    <tr><th colspan="2">Figure 4</th></tr>
+    <tr><th colspan="2">Figure 6</th></tr>
+    <tr><th colspan="2">Figure 7</th></tr>
+    <tr><td><strong>7a</strong></td><td><a href="code/ZZ_combinations/0-prepare_main_seurat.ipynb">ZZ_combinations/0-prepare_main_seurat.ipynb</a></td></tr>
+    <tr><td><strong>7b</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
+    <tr><td><strong>7c</strong></td><td><a href="code/ZZ_combinations/4-state_bias.ipynb">ZZ_combinations/4-state_bias.ipynb</a></td></tr>
+    <tr><td><strong>7d</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td><strong>7e</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><th colspan="2">ED Figure 9</th></tr>
+    <tr><td><strong>ed9a</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+    <tr><td><strong>ed9b</strong></td><td><a href="code/ZZ_combinations/3-pairwise_dosage.ipynb">ZZ_combinations/3-pairwise_dosage.ipynb</a></td></tr>
+    <tr><td><strong>ed9e</strong></td><td>?</td></tr>
+    <tr><td><strong>ed9f</strong></td><td><a href="code/ZZ_combinations/5-unique_state_enrichment.ipynb">ZZ_combinations/5-unique_state_enrichment.ipynb</a></td></tr>
+  </tbody>
+</table>

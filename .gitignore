@@ -4,3 +4,13 @@ code/ZZ_Endogenous/*/*.csv
 __pycache__
 code/ZZ_Endogenous/*/*.ipynb
 code/ZZ_Endogenous/endo_vs_exo/plots_endogenous
+data/C3H10_10X_all_exps_D0regressed10pc_50pc_integrated_dosealigned.rds
+.gitignore
+data/df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated.rds
+data/df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated_dosealigned.rds
+code/ZZ_Dose_comparison/GSE216481/GSE216595_180124_perturb.h5ad
+code/ZZ_Reproducibility/plots/
+code/ZZ_Scaling/plots/
+code/ZZ_Combinations/output
+code/ZZ_Combinations/metadata.tsv
+code/ZZ_Combinations/prev
