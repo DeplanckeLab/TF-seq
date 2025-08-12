@@ -6,7 +6,7 @@ All .fastq files were deposited on ArrayExpress under the accession number [E-MT
 Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lineage studies (adipocyte, myocytes, and chondrocytes differentiation). This information can be found in the [C3H10_10X_Metadata.xlsx](metadata/C3H10_10X_Metadata.xlsx) file.
 
 
-## 1. Each figure panel can be reproduced using the following scripts/notebooks
+## 1. Notebooks/scripts that reproduce each figure panel
 
 <table border="1" cellspacing="0" cellpadding="5">
   <thead>
