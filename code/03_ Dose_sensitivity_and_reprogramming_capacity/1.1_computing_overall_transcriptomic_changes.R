@@ -56,3 +56,5 @@ df$Overall_transcriptomic_change <- -df$correlation
 df$Overall_transcriptomic_change <- df$Overall_transcriptomic_change - mean_D0_acti
 
 saveRDS(df, file = "results/df_overall_transcriptomic_changes.rds")
+write.csv(df, file = "df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated.csv", quote = FALSE)
+

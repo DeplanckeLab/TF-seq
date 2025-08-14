@@ -2,7 +2,7 @@
 # author: "Wangjie Liu"
 # date: "2024/10/23"
 
-
+setwd("./")
 
 library(Seurat)
 library(ggplot2)
@@ -60,7 +60,7 @@ plot.TF.activities <- function(tfoi, data, col.TFs = NULL, model = NULL, alpha_g
 
 # load data
 seu <- readRDS("results/C3H10_10X_all_exps_D0regressed_integrated_dosealigned.rds") 
-df <- readRDS("output_version3_2024_June/7-TF-potency-capacity/df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated_dosealigned.rds")
+df <- readRDS("output_version3_2024_June/7-TF-potency-capacity/df_overall_transcriptomic_changes.rds")
 
 # add metadata
 seu <- subset(seu, subset = Phase_corrected == "G1")
@@ -231,7 +231,7 @@ nls.Par$category[nls.Par$category == "high-capacity" &
                    nls.Par$predict.value_meanDose < 0.23 ] <- "high-capacity & low-sensitivity"
 
 # save the results
-write.csv(nls.Par, file = "results/Supplementary_Table_4.csv", row.names = T)
+write.csv(nls.Par, file = "data/TF_categories_on_potency_capacity_dosealigned.csv", row.names = T) # Supplementary_table_4
 
 
 ##------------------------------------- plotting
