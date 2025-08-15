@@ -52,7 +52,7 @@ P_ALLCells_new <- barplot_TopCyclingTF_step2(P_ALLCells$df_PhaseperTF,
                                              plot_only_significant = Only_Significant)
 
 ggsave(P_ALLCells_new$p_h, height = 4.79, width = 15, 
-       filename = paste0("figures/Fig6n-", Phase_to_use, "_FisherTest_FDR",FDR.threshold,"_Sig-", Only_Significant,"_total_nCell.pdf"))
+       filename = paste0("figures/Fig6b-", Phase_to_use, "_FisherTest_FDR",FDR.threshold,"_Sig-", Only_Significant,"_total_nCell.pdf"))
 
 
 
