@@ -60,7 +60,7 @@ plot.TF.activities <- function(tfoi, data, col.TFs = NULL, model = NULL, alpha_g
 
 # load data
 seu <- readRDS("results/C3H10_10X_all_exps_D0regressed_integrated_dosealigned.rds") 
-df <- readRDS("output_version3_2024_June/7-TF-potency-capacity/df_overall_transcriptomic_changes.rds")
+df <- readRDS("results/df_overall_transcriptomic_changes.rds")
 
 # add metadata
 seu <- subset(seu, subset = Phase_corrected == "G1")
