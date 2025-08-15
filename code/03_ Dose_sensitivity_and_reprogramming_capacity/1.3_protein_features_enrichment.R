@@ -29,7 +29,7 @@ convertMouseGeneList <- function(x){
 }
 
 
-##------------------------------------- enrichment for protein feature
+##------------------------------------- enrichment for protein feature (Figure 4)
 # load and preprocess TF categories
 TF.all <- read.csv("data/TF_categories_on_potency_capacity_dosealigned.csv", header = T)
 rownames(TF.all) <- TF.all$X

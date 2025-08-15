@@ -1,5 +1,5 @@
 # title: "Quantification of overall transcriptomic changes upon TF overexpression"
-# input dta: "D0 regressed, G1-phase TF atlas"
+# input data: "D0 regressed, G1-phase TF atlas"
 # author: "Wangjie Liu"
 
 
