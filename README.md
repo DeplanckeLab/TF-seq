@@ -66,9 +66,9 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td>S3<strong>e</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
     <tr><td>S3<strong>f</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
     <tr><td>S3<strong>g</strong></td><td><a href="code/ZZ_Reproducibility/reproducibility.ipynb">ZZ_Reproducibility/reproducibility.ipynb</a></td></tr>
-    <tr><td>S3<strong>h</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td>S3<strong>i</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td>S3<strong>j</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
-    <tr><td>S3<strong>k</strong></td><td><a href="code/ZZ_Scaling/scaling.ipynb">ZZ_Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>h</strong></td><td><a href="code/03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb">03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>i</strong></td><td><a href="code/03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb">03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>j</strong></td><td><a href="code/03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb">03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb</a></td></tr>
+    <tr><td>S3<strong>k</strong></td><td><a href="code/03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb">03_Dose_sensitivity_and_reprogramming_capacity/Scaling/scaling.ipynb</a></td></tr>
   </tbody>
 </table>

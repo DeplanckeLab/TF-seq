@@ -10,7 +10,7 @@ data/df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated.rds
 data/df_allG1Cells_PhaseCorrected_allTFs_D0regressed10pc_50pc_integrated_dosealigned.rds
 code/ZZ_Dose_comparison/GSE216481/GSE216595_180124_perturb.h5ad
 code/ZZ_Reproducibility/plots/
-code/ZZ_Scaling/plots/
+code/03_Dose_sensitivity_and_reprogramming_capacity/Scaling/plots/
 code/07_Combinations/output
 code/07_Combinations/metadata.tsv
 code/07_Combinations/prev
