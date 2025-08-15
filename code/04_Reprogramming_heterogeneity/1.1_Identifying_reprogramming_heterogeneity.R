@@ -121,5 +121,5 @@ p_heatmap <- pheatmap::pheatmap(df_mat,
 
 p_heatmap
 
-ggsave(p_heatmap, filename = "figures/EDFig_5cb.pdf",
+ggsave(p_heatmap, filename = "figures/EDFig_5c.pdf",
        width = 8, height = 12)
