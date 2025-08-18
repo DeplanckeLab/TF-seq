@@ -5,3 +5,4 @@ Important considerations:
 - All TFs were overexpressed in confluent conditions. Negative controls for those samples are present as "D0_confluent". Some other experiments, e.g. adipogenesis induction, were performed in non-confluent conditions, for which the control is present as "D0".
 - Experiment 14 contains a repeat, at higher power levels, of many TFs that were already performed in earlier experiments.
 - The "mCherry-BCXX" barcodes were used internally to design the cell lineage studies (adipocyte, myocytes, and chondrocytes differentiation). This information can be found in [C3H10_10X_Metadata.xlsx](C3H10_10X_Metadata.xlsx).
+- Only a subset of cells responded to the adipogenesis stimulus. These are included in [Adipo_ref_cells.txt](Adipo_ref_cells.txt).
