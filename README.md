@@ -19,9 +19,9 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
   </thead>
   <tbody>
     <tr><th colspan="2" border="1">Figure 1</th></tr>
-    <tr><td>1><strong>e-f</strong></td><td><a href="code/01_Preprocessing_and_integration">01_Preprocessing_and_integration</a></td></tr>
+    <tr><td>1<strong>e-f</strong></td><td><a href="code/01_Preprocessing_and_integration">01_Preprocessing_and_integration</a></td></tr>
     <tr><th colspan="2" border="1">Figure 2</th></tr>
-    <tr><td>1><strong>a-d</strong></td><td><a href="code/02_Clustering_DE_and_GSEA">02_Clustering_DE_and_GSEA</a></td></tr>
+    <tr><td>1<strong>a-d</strong></td><td><a href="code/02_Clustering_DE_and_GSEA">02_Clustering_DE_and_GSEA</a></td></tr>
     <tr><th colspan="2" border="1">Figure 3</th></tr>
     <tr><td>3<strong>a,f-g</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity">04_Dose_sensitivity_and_reprogramming_capacity</a></td></tr>
     <tr><td>3<strong>b-e</strong></td><td><a href="code/07_Endogenous_dose/2-create_figures.ipynb">07_Endogenous_dose/2-create_figures.ipynb</a></td></tr>
