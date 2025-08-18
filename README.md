@@ -20,6 +20,7 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
   <tbody>
     <tr><th colspan="2" border="1">Figure 1</th></tr>
     <tr><td>1<strong>e-f</strong></td><td><a href="code/01_Preprocessing_and_integration">01_Preprocessing_and_integration</a></td></tr>
+    <tr><td>5<strong>g</strong></td><td><a href="code/08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R">08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R</a></td></tr>
     <tr><th colspan="2" border="1">Figure 2</th></tr>
     <tr><td>1<strong>a-d</strong></td><td><a href="code/02_Clustering_DE_and_GSEA">02_Clustering_DE_and_GSEA</a></td></tr>
     <tr><th colspan="2" border="1">Figure 3</th></tr>
