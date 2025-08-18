@@ -51,10 +51,9 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td>ED4<strong>e</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb">04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb</a></td></tr>
     <tr><td>ED4<strong>f</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb">04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb</a></td></tr>
     <tr><td>ED4<strong>g</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb">04_Dose_sensitivity_and_reprogramming_capacity/Power/power.ipynb</a></td></tr>
-    <tr><th colspan="2" border="1">Extended Data Figure 6</th></tr>
-    <tr><td>ED6<strong>a-f</strong></td><td><a href="code/02_Clustering_DE_and_GSEA">02_Clustering_DE_and_GSEA</a></td></tr>
-    <tr><th colspan="2" border="1">Extended Data Figure 7</th></tr>
-    <tr><td>ED7<strong>a-l</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity">04_Dose_sensitivity_and_reprogramming_capacity</a></td></tr>
+    <tr><th colspan="2" border="1">Extended Data Figure 5-7</th></tr>
+    <tr><td>ED5-7<strong></strong></td><td><a href="code/06_Reprogramming_heterogeneity">06_Reprogramming_heterogeneity</a></td></tr>
+    <tr><td>ED6k<strong></strong></td><td><a href="code/08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R">08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 8</th></tr>
     <tr><td>ED7<strong>a-f</strong></td><td><a href="code/09_Cell_cycle">09_Cell_cycle</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 9</th></tr>
