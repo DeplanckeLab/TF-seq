@@ -261,12 +261,7 @@ names(cols.batch) <- c(paste0("exp", 1:9))
 
 
 ## ----------------------------------------------- Figure 4a, b - reproducibility script
-## read the whole scTF-seq atlas and subset to G1 (Phase_corrected)
-seu <- readRDS("results/C3H10_10X_all_exps_merged_genefiltered_integrated_functional.rds")
-seu <- subset(seu, Phase_corrected == "G1")
 DefaultAssay(seu) <- "RNA"
-dim(seu)
-
 
 ## gene list for adiposcore
 Adipo <- c("Fabp4", "Lpl", "Pparg", "Lipe", "Adipoq", "Cd36",
