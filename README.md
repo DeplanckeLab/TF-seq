@@ -55,7 +55,7 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><td>ED5-7<strong></strong></td><td><a href="code/06_Reprogramming_heterogeneity">06_Reprogramming_heterogeneity</a></td></tr>
     <tr><td>ED6k<strong></strong></td><td><a href="code/08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R">08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 8</th></tr>
-    <tr><td>ED7<strong>a-f</strong></td><td><a href="code/09_Cell_cycle">09_Cell_cycle</a></td></tr>
+    <tr><td>ED8<strong>a-f</strong></td><td><a href="code/09_Cell_cycle">09_Cell_cycle</a></td></tr>
     <tr><th colspan="2" border="1">Extended Data Figure 9</th></tr>
     <tr><td>ED9<strong>a</strong></td><td><a href="code/10_Combinations/5-unique_state_enrichment.ipynb">10_Combinations/5-unique_state_enrichment.ipynb</a></td></tr>
     <tr><td>ED9<strong>b</strong></td><td><a href="code/10_Combinations/3-pairwise_dosage.ipynb">10_Combinations/3-pairwise_dosage.ipynb</a></td></tr>
