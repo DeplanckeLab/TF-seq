@@ -28,7 +28,8 @@ Of note, the "mCherry-BCXX" barcodes were used internally to design the cell lin
     <tr><th colspan="2" border="1">Figure 4</th></tr>
     <tr><td>4</td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity/1.3_protein_features_enrichment.R">04_Dose_sensitivity_and_reprogramming_capacity/1.3_protein_features_enrichment.R</a></td></tr>
     <tr><th colspan="2" border="1">Figure 5</th></tr>
-    <tr><td>5<strong>a-m</strong></td><td><a href="code/04_Dose_sensitivity_and_reprogramming_capacity">04_Dose_sensitivity_and_reprogramming_capacity</a></td></tr>
+    <tr><td>5<strong>a-f,i,k-m</strong></td><td><a href="code/06_Reprogramming_heterogeneity">06_Reprogramming_heterogeneity</a></td></tr>
+    <tr><td>5<strong>j</strong></td><td><a href="code/08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R">08_RNAscope_quantification/1.2_plot_qupath_measurements_KLF4_ESR2.R</a></td></tr>
     <tr><th colspan="2" border="1">Figure 6</th></tr>
     <tr><td>6<strong>a-e</strong></td><td><a href="code/09_Cell_cycle">09_Cell_cycle</a></td></tr>
     <tr><th colspan="2" border="1">Figure 7</th></tr>
