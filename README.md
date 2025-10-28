@@ -1,7 +1,7 @@
 # scTF-seq
 Material and source code for the scTF-seq manuscript. 
 
-📰Manuscript: TBD
+📰Manuscript: [10.1038/s41588-025-02343-7](https://www.nature.com/articles/s41588-025-02343-7)
 
 📜Preprint: [10.1101/2024.01.30.577921v1](www.biorxiv.org/content/10.1101/2024.01.30.577921v1) 
 
