@@ -3,6 +3,8 @@ Material and source code for the scTF-seq manuscript.
 
 📰Manuscript: [10.1038/s41588-025-02343-7](https://www.nature.com/articles/s41588-025-02343-7)
 
+Liu, W., Saelens, W., Rainer, P. et al. Dissecting the impact of transcription factor dose on cell reprogramming heterogeneity using scTF-seq. _Nature Genetics_ **57**, 2522–2535 (2025).  https://doi.org/10.1038/s41588-025-02343-7
+
 📜Preprint: [10.1101/2024.01.30.577921v1](www.biorxiv.org/content/10.1101/2024.01.30.577921v1) 
 
 📅Data: [E-MTAB-13010](https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-MTAB-13010)
